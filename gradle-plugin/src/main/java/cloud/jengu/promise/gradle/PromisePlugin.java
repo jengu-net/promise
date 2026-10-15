@@ -3,6 +3,12 @@ package cloud.jengu.promise.gradle;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.attributes.Bundling;
+import org.gradle.api.attributes.Category;
+import org.gradle.api.attributes.LibraryElements;
+import org.gradle.api.attributes.Usage;
+import org.gradle.api.attributes.java.TargetJvmEnvironment;
+import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.tasks.JavaExec;
@@ -111,6 +117,21 @@ public class PromisePlugin implements Plugin<Project> {
             c.setCanBeResolved(true);
             c.setDescription("What the composed ledger reads: every module applying the plugin, "
                     + "as it ships.");
+            // Asked for as a Java runtime classpath asks: without it, a
+            // library published in several variants — a jre and an android
+            // build, say — is one no resolution can choose between.
+            ObjectFactory objects = root.getObjects();
+            c.attributes(a -> {
+                a.attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage.class, Usage.JAVA_RUNTIME));
+                a.attribute(Category.CATEGORY_ATTRIBUTE,
+                        objects.named(Category.class, Category.LIBRARY));
+                a.attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE,
+                        objects.named(LibraryElements.class, LibraryElements.JAR));
+                a.attribute(Bundling.BUNDLING_ATTRIBUTE,
+                        objects.named(Bundling.class, Bundling.EXTERNAL));
+                a.attribute(TargetJvmEnvironment.TARGET_JVM_ENVIRONMENT_ATTRIBUTE,
+                        objects.named(TargetJvmEnvironment.class, TargetJvmEnvironment.STANDARD_JVM));
+            });
         });
         root.getDependencies().add(ledger.getName(), framework());
         List<File> results = new ArrayList<>();

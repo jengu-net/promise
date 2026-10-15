@@ -67,6 +67,10 @@ class APluginPacksAModulesCitationsTest {
                         java
                         id("cloud.jengu.promise")
                     }
+                    // A library published in several variants, as a real
+                    // product's classpath holds one: the composed ledger has to
+                    // resolve it as a Java runtime classpath does.
+                    dependencies { implementation("com.google.guava:guava:33.2.1-jre") }
                     tasks.test { onlyIf { false } }
                     """);
             sources(product);
