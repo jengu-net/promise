@@ -3,6 +3,7 @@ package cloud.jengu.promise;
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedAnnotationTypes;
+import javax.annotation.processing.SupportedOptions;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
@@ -25,9 +26,22 @@ import java.util.TreeSet;
  * reads each catalogue whole; registration is never a side effect of class
  * loading, because the constants most likely to go untouched (gaps, planned
  * promises with no tests yet) are exactly the ones coverage exists to count.
+ *
+ * <p><b>Which index a citation goes to is the compilation's to say</b>, with
+ * the option {@code -Apromise.index=tested} on a test compilation. A
+ * processor cannot tell a test source set from a main one, and guessing from
+ * paths would make a citation's meaning depend on a directory layout. Without
+ * the option the citations are production code's, written to
+ * {@link Proofs#INDEX}; with it, a test's, written to
+ * {@link Proofs#TESTED_INDEX} — so the two never overwrite each other in a jar
+ * that carries both.
  */
 @SupportedAnnotationTypes("*")
+@SupportedOptions(CatalogueProcessor.INDEX_OPTION)
 public final class CatalogueProcessor extends AbstractProcessor {
+
+    /** The option naming which claim this compilation's citations make. */
+    public static final String INDEX_OPTION = "promise.index";
 
     private final Set<String> catalogues = new TreeSet<>();
     private final Set<String> proofs = new TreeSet<>();
@@ -64,16 +78,50 @@ public final class CatalogueProcessor extends AbstractProcessor {
         }
         if (round.processingOver()) {
             write(Registry.INDEX, catalogues);
-            write(Proofs.INDEX, proofs);
+            Proofs.Kind kind = citationKind();
+            if (kind != null) {
+                write(kind.index(), proofs);
+            }
         }
         // Never claimed: other processors may care about the same types.
         return false;
     }
 
-    private void indexCitation(TypeElement annotationType, Element site) {
-        String where = processingEnv.getElementUtils()
-                .getBinaryName((TypeElement) site.getEnclosingElement())
+    /** What this compilation's citations claim, or null once an unknown option was refused. */
+    private Proofs.Kind citationKind() {
+        String asked = processingEnv.getOptions().get(INDEX_OPTION);
+        if (asked == null || asked.equals("enforced")) {
+            return Proofs.Kind.ENFORCED;
+        }
+        if (asked.equals("tested")) {
+            return Proofs.Kind.TESTED;
+        }
+        processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
+                INDEX_OPTION + " is 'tested' for a compilation of tests, or 'enforced' (the "
+                        + "default) for production code, and this one asked for '" + asked
+                        + "'");
+        return null;
+    }
+
+    /**
+     * Where a citation stands: a type by its binary name, and a member as its
+     * type's binary name, '#', and its own name — a constructor as
+     * {@code <init>}, since that is the name the class file gives it.
+     */
+    private String siteOf(Element site) {
+        if (site instanceof TypeElement type) {
+            return processingEnv.getElementUtils().getBinaryName(type).toString();
+        }
+        Element enclosing = site.getEnclosingElement();
+        while (!(enclosing instanceof TypeElement)) {
+            enclosing = enclosing.getEnclosingElement();
+        }
+        return processingEnv.getElementUtils().getBinaryName((TypeElement) enclosing)
                 + "#" + site.getSimpleName();
+    }
+
+    private void indexCitation(TypeElement annotationType, Element site) {
+        String where = siteOf(site);
         for (javax.lang.model.element.AnnotationMirror mirror : site.getAnnotationMirrors()) {
             if (!mirror.getAnnotationType().asElement().equals(annotationType)) {
                 continue;
