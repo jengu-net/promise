@@ -231,6 +231,8 @@ class APluginPacksAModulesCitationsTest {
         String two = Files.readString(build.resolve("two/build/reports/promise/index.html"));
         assertTrue(two.contains("\"standing\":\"NO_RESULT\""),
                 "a module whose tests never ran reads as passing");
+        String badge = Files.readString(build.resolve("one/build/reports/promise/badge.svg"));
+        assertTrue(badge.contains("aria-label=\"promises: 50% kept · 1/2 passing\""), badge);
         assertNull(reported.task(":one:test"), "drawing the ledger ran the tests");
         assertNull(reported.task(":plain:promiseReport"), "a module without the plugin drew a ledger");
     }

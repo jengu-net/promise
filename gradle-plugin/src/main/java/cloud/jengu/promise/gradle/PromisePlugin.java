@@ -129,13 +129,14 @@ public class PromisePlugin implements Plugin<Project> {
         File dir = project.getLayout().getBuildDirectory().dir("reports/promise").get().getAsFile();
         File page = new File(dir, "index.html");
         File summary = new File(dir, "summary.md");
+        File badge = new File(dir, "badge.svg");
         project.getTasks().register(REPORT_TASK, JavaExec.class, task -> {
             task.setGroup("verification");
             task.setDescription("Draws the ledger: what this build promises, and what its last "
                     + "test run proved.");
             task.getMainClass().set("cloud.jengu.promise.HtmlReport");
             task.setClasspath(classpath);
-            task.getOutputs().files(page, summary);
+            task.getOutputs().files(page, summary, badge);
             // The results are whatever the last run left, which no input
             // declaration can describe: drawn every time it is asked for.
             task.getOutputs().upToDateWhen(t -> false);
@@ -144,7 +145,8 @@ public class PromisePlugin implements Plugin<Project> {
             task.mustRunAfter(project.getTasks().withType(Test.class));
             task.getArgumentProviders().add(() -> {
                 List<String> args = new ArrayList<>(List.of("--out", page.getPath(),
-                        "--summary", summary.getPath(), "--title", extension.getTitle().get()));
+                        "--summary", summary.getPath(), "--badge", badge.getPath(),
+                        "--title", extension.getTitle().get()));
                 for (File root : results) {
                     args.add("--results");
                     args.add(root.getPath());

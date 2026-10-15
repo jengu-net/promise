@@ -1,0 +1,131 @@
+name: ledger page
+
+# Publishes a build's promise ledger as a page of its own, and links it from
+# the build result: a commit status beside the other checks, whose Details
+# open the page, and a link on the run's summary.
+#
+# A reusable workflow, so any product drawing its ledger with the Gradle
+# plugin shows it the same way:
+#
+#   ledger-page:
+#     needs: build
+#     if: always()
+#     permissions: { contents: write, statuses: write }
+#     uses: jengu-net/promise/.github/workflows/ledger-page.yml@<version>
+#
+# The ledger is read from the artifact the build kept (index.html and
+# summary.md, as promiseReport writes them) and published to the repository's
+# gh-pages branch, served by GitHub Pages from that branch: /runs/<run id>/
+# for every run, /main/ for the default branch's latest. The newest runs are
+# kept and older ones pruned.
+#
+# It runs none of the build's code and takes the only write permission there
+# is, so the job that builds a pull request never holds it. A pull request
+# from a fork has a token that cannot write: its ledger stays an artifact.
+
+on:
+  workflow_call:
+    inputs:
+      artifact:
+        description: The artifact the build kept the ledger in.
+        type: string
+        default: promise-ledger
+      keep:
+        description: How many runs' pages are kept.
+        type: number
+        default: 40
+
+jobs:
+  page:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      contents: write
+      statuses: write
+    steps:
+      - name: Take the ledger the build kept
+        id: ledger
+        # A build that stopped before it drew one leaves nothing to show.
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.artifact }}
+          path: ledger
+      - name: Publish the page and link it from the build
+        if: steps.ledger.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN: ${{ github.run_id }}
+          KEEP: ${{ inputs.keep }}
+          SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          ON_DEFAULT: ${{ github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
+        run: |
+          set -euo pipefail
+          owner="${REPO%%/*}"
+          name="${REPO#*/}"
+          base="https://$(echo "$owner" | tr '[:upper:]' '[:lower:]').github.io/${name}"
+          url="${base}/runs/${RUN}/"
+
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          remote="https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git"
+          if git ls-remote --exit-code --heads "$remote" gh-pages > /dev/null; then
+            git clone --quiet --depth 1 --branch gh-pages "$remote" site
+          else
+            mkdir site
+            git -C site init --quiet --initial-branch gh-pages
+            git -C site remote add origin "$remote"
+          fi
+
+          mkdir -p "site/runs/${RUN}"
+          cp -R ledger/. "site/runs/${RUN}/"
+          if [ "$ON_DEFAULT" = true ]; then
+            rm -rf site/main
+            mkdir -p site/main
+            cp -R ledger/. site/main/
+          fi
+          # The site's front door is the default branch's ledger.
+          if [ ! -f site/index.html ]; then
+            printf '%s\n' '<!doctype html><meta charset="utf-8"><title>Promise ledger</title>' \
+              '<meta http-equiv="refresh" content="0; url=main/">' \
+              '<p><a href="main/">The ledger of the default branch</a></p>' > site/index.html
+          fi
+          touch site/.nojekyll
+          ls -1 site/runs | sort -n \
+            | awk -v keep="$KEEP" '{ runs[NR] = $0 } END { for (i = 1; i <= NR - keep; i++) print runs[i] }' \
+            | while read -r old; do
+            rm -rf "site/runs/${old}"
+          done
+
+          cd site
+          git add -A
+          git commit --quiet -m "The ledger of run ${RUN}"
+          # Runs finishing together push to one branch; their pages are
+          # different directories, so a rebase is all a second one needs.
+          for attempt in 1 2 3 4; do
+            if git push --quiet origin HEAD:gh-pages; then
+              break
+            fi
+            if [ "$attempt" = 4 ]; then
+              echo "::error::could not publish the ledger to gh-pages"
+              exit 1
+            fi
+            sleep $((attempt * 3))
+            git fetch --quiet origin gh-pages
+            git rebase --quiet origin/gh-pages
+          done
+          cd ..
+
+          kept="$(sed -n '1s/.*: //p' ledger/summary.md)"
+          run="$(grep -o 'last run: [0-9]* passing, [0-9]* failing' ledger/summary.md | sed 's/last run: //' || true)"
+          description="${kept}${run:+ · ${run}}"
+          gh api "repos/${REPO}/statuses/${SHA}" --silent \
+            -f state=success -f context="promise ledger" \
+            -f target_url="$url" -f description="${description:0:140}"
+          {
+            echo "### [Open the promise ledger](${url})"
+            echo
+            echo "${description}. The page is served by GitHub Pages and may take a minute to appear."
+          } >> "$GITHUB_STEP_SUMMARY"

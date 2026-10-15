@@ -40,7 +40,8 @@ public enum ToolsetFeatures implements Feature {
             ToolsetPromises.COVERAGE_IS_A_FOLD,
             ToolsetPromises.STANDING_IS_READ_FROM_THE_RUN,
             ToolsetPromises.ONE_PRODUCTS_UNREADABLE_EVIDENCE_IS_ITS_OWN,
-            ToolsetPromises.THE_LEDGER_IS_ONE_PAGE)),
+            ToolsetPromises.THE_LEDGER_IS_ONE_PAGE,
+            ToolsetPromises.THE_BADGE_SAYS_WHAT_THE_LEDGER_SAYS)),
 
     BUILDING("Wiring a product's build",
             "One Gradle plugin is all a module applies: it indexes the module's catalogues "

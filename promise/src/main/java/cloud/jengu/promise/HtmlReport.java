@@ -67,6 +67,57 @@ public final class HtmlReport {
         return summary(evidence, title, true);
     }
 
+    /**
+     * The ledger as a badge: one small SVG, what is kept and how the last run
+     * went, for a README to show and link to the page. Green when everything
+     * is kept and nothing fails, amber while promises wait for a test, red
+     * when a test citing one failed.
+     */
+    public static String badge(Evidence evidence, boolean withToolset) {
+        Registry.Model model = evidence.model();
+        Map<String, Promise> promises = promises(model, withToolset);
+        long kept = promises.values().stream().filter(p -> kept(model, p)).count();
+        long passing = promises.values().stream()
+                .filter(p -> evidence.standing(p) == Evidence.Standing.PASSING).count();
+        long failing = promises.values().stream()
+                .filter(p -> evidence.standing(p) == Evidence.Standing.FAILING).count();
+        String message = percent(kept, promises.size()) + " kept";
+        if (!evidence.results().isEmpty()) {
+            message += failing > 0 ? " · " + failing + " failing"
+                    : " · " + passing + "/" + promises.size() + " passing";
+        }
+        String colour = failing > 0 ? "#b4433a"
+                : kept < promises.size() ? "#b9802f" : "#14532d";
+        return svg("promises", message, colour);
+    }
+
+    /** A flat two-part badge; text measured as a badge font sets it, near enough. */
+    static String svg(String label, String message, String colour) {
+        int left = width(label);
+        int right = width(message);
+        int total = left + right;
+        String alt = escapeHtml(label + ": " + message);
+        return "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"" + total + "\" height=\"20\" "
+                + "role=\"img\" aria-label=\"" + alt + "\"><title>" + alt + "</title>"
+                + "<linearGradient id=\"s\" x2=\"0\" y2=\"100%\"><stop offset=\"0\" "
+                + "stop-color=\"#fff\" stop-opacity=\".12\"/><stop offset=\"1\" stop-opacity=\".12\"/>"
+                + "</linearGradient><clipPath id=\"r\"><rect width=\"" + total + "\" height=\"20\" "
+                + "rx=\"3\" fill=\"#fff\"/></clipPath><g clip-path=\"url(#r)\">"
+                + "<rect width=\"" + left + "\" height=\"20\" fill=\"#2c3a47\"/>"
+                + "<rect x=\"" + left + "\" width=\"" + right + "\" height=\"20\" fill=\"" + colour + "\"/>"
+                + "<rect width=\"" + total + "\" height=\"20\" fill=\"url(#s)\"/></g>"
+                + "<g fill=\"#fff\" text-anchor=\"middle\" font-family=\"Verdana,Geneva,DejaVu Sans,"
+                + "sans-serif\" font-size=\"11\">"
+                + "<text x=\"" + (left / 2.0) + "\" y=\"14\">" + escapeHtml(label) + "</text>"
+                + "<text x=\"" + (left + right / 2.0) + "\" y=\"14\">" + escapeHtml(message) + "</text>"
+                + "</g></svg>\n";
+    }
+
+    /** Verdana at 11px averages about 6.8px a character; a badge pads 10px a side. */
+    private static int width(String text) {
+        return (int) Math.round(text.codePointCount(0, text.length()) * 6.8) + 20;
+    }
+
     /** The summary of the ledger {@link #render(Evidence, String, boolean)} draws. */
     public static String summary(Evidence evidence, String title, boolean withToolset) {
         Registry.Model model = evidence.model();
@@ -138,6 +189,7 @@ public final class HtmlReport {
      * <pre>
      * --out file        the HTML page to write (required)
      * --summary file    the markdown summary to write, if wanted
+     * --badge file      the SVG badge to write, if wanted
      * --title text      what the page is the ledger of (default "Promise ledger")
      * --results dir     a directory to read JUnit XML from; repeatable
      * --strict          exit 1, after writing, when anything could not be read
@@ -148,6 +200,7 @@ public final class HtmlReport {
     public static void main(String[] args) throws IOException {
         Path out = null;
         Path summary = null;
+        Path badge = null;
         String title = "Promise ledger";
         List<Path> roots = new ArrayList<>();
         boolean strict = false;
@@ -156,12 +209,13 @@ public final class HtmlReport {
             switch (args[i]) {
                 case "--out" -> out = Path.of(args[++i]);
                 case "--summary" -> summary = Path.of(args[++i]);
+                case "--badge" -> badge = Path.of(args[++i]);
                 case "--title" -> title = args[++i];
                 case "--results" -> roots.add(Path.of(args[++i]));
                 case "--strict" -> strict = true;
                 case "--without-toolset" -> withToolset = false;
                 default -> throw new IllegalArgumentException("unknown argument " + args[i]
-                        + " — expected --out, --summary, --title, --results, --strict or "
+                        + " — expected --out, --summary, --badge, --title, --results, --strict or "
                         + "--without-toolset");
             }
         }
@@ -172,6 +226,9 @@ public final class HtmlReport {
         write(out, render(evidence, title, withToolset));
         if (summary != null) {
             write(summary, summary(evidence, title, withToolset));
+        }
+        if (badge != null) {
+            write(badge, badge(evidence, withToolset));
         }
         System.out.println("promise ledger: " + out.toAbsolutePath());
         evidence.unreadable().forEach(u ->

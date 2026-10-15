@@ -36,7 +36,7 @@ coverage: 4/4 — {PROVEN=4}
 
 From a classpath, the composed graph: every promise's status, every group's coverage, and with a run's JUnit results each promise's standing. One product's unreadable evidence is reported and never takes another's down. The same reading draws the markdown report and the HTML ledger.
 
-coverage: 5/5 — {PROVEN=5}
+coverage: 6/6 — {PROVEN=6}
 
 | promise | status | proven by |
 |---|---|---|
@@ -45,6 +45,7 @@ coverage: 5/5 — {PROVEN=5}
 | REQ-PROMISE-STANDING-IS-READ-FROM-THE-RUN | PROVEN | cloud.jengu.promise.EvidenceTest#failingWins<br>cloud.jengu.promise.EvidenceTest#noResult<br>cloud.jengu.promise.EvidenceTest#passingAndUncited<br>cloud.jengu.promise.EvidenceTest#resultsFromTheClasspath |
 | REQ-PROMISE-ONE-PRODUCTS-UNREADABLE-EVIDENCE-IS-ITS-OWN | PROVEN | cloud.jengu.promise.EvidenceTest#oneProductsUnreadableIndexIsReported |
 | REQ-PROMISE-THE-LEDGER-IS-ONE-PAGE | PROVEN | cloud.jengu.promise.HtmlReportTest#aCatalogueCannotWriteMarkupIntoThePage<br>cloud.jengu.promise.HtmlReportTest#theLedgerCarriesTheModelAndTheRun<br>cloud.jengu.promise.HtmlReportTest#theSummaryLeadsWithWhatIsKept<br>cloud.jengu.promise.HtmlReportTest#withoutARunThereIsNoStanding |
+| REQ-PROMISE-THE-BADGE-SAYS-WHAT-THE-LEDGER-SAYS | PROVEN | cloud.jengu.promise.HtmlReportTest#theBadgeSaysWhatTheLedgerSays |
 
 ### FEAT-PROMISE-BUILDING — Wiring a product's build
 
