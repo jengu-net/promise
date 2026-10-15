@@ -1,0 +1,203 @@
+package cloud.jengu.promise.gradle;
+
+import cloud.jengu.promise.Promise;
+import cloud.jengu.promise.Proofs;
+import org.gradle.testkit.runner.BuildResult;
+import org.gradle.testkit.runner.GradleRunner;
+import org.gradle.testkit.runner.TaskOutcome;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+
+import java.io.IOException;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Set;
+import java.util.jar.JarFile;
+import java.util.zip.ZipEntry;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+/**
+ * A module applying the plugin gets its catalogues, its production citations
+ * and its tests' citations into its jar with no build code of its own; one
+ * that does not is unchanged; and two products' jars on one classpath answer
+ * for both.
+ *
+ * <p>Real builds, run by Gradle's own test kit against the framework this
+ * build made, so what is proven is what a product's build would do.
+ */
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+class APluginPacksAModulesCitationsTest {
+
+    private Path build;
+    private BuildResult result;
+
+    @BeforeAll
+    void aProductsBuild() throws IOException {
+        build = Files.createTempDirectory("promise-plugin");
+        write("settings.gradle.kts", """
+                rootProject.name = "products"
+                include("one", "two", "plain")
+                dependencyResolutionManagement {
+                    repositories {
+                        maven { url = uri("%s") }
+                        mavenCentral()
+                    }
+                }
+                """.formatted(System.getProperty("promise.repo").replace('\\', '/')));
+        for (String product : List.of("one", "two")) {
+            // Its tests are citation sites, never run here: a jar that waited
+            // on them shows as the test task in the result, not as a failure.
+            write(product + "/build.gradle.kts", """
+                    plugins {
+                        java
+                        id("cloud.jengu.promise")
+                    }
+                    tasks.test { onlyIf { false } }
+                    """);
+            sources(product);
+        }
+        // The same sources, and no plugin: the framework named by hand, as
+        // before, and nothing else.
+        write("plain/build.gradle.kts", """
+                plugins { java }
+                dependencies {
+                    implementation("cloud.jengu.promise:promise:%s")
+                }
+                """.formatted(System.getProperty("promise.version")));
+        sources("plain");
+
+        result = GradleRunner.create()
+                .withProjectDir(build.toFile())
+                .withPluginClasspath()
+                .withArguments("jar", "--stacktrace")
+                .forwardOutput()
+                .build();
+    }
+
+    private void sources(String product) throws IOException {
+        write(product + "/src/main/java/" + product + "/Promises.java", """
+                package %1$s;
+                import cloud.jengu.promise.Catalogue;
+                import cloud.jengu.promise.Promise;
+                @Catalogue(namespace = "REQ-%2$s")
+                public enum Promises implements Promise {
+                    KEPT, ENFORCED;
+                    @Override public String text() { return name(); }
+                }
+                """.formatted(product, product.toUpperCase()));
+        write(product + "/src/main/java/" + product + "/Proving.java", """
+                package %s;
+                import cloud.jengu.promise.Cites;
+                import java.lang.annotation.*;
+                @Cites
+                @Retention(RetentionPolicy.RUNTIME)
+                @Target({ElementType.METHOD, ElementType.TYPE})
+                public @interface Proving { Promises[] value(); }
+                """.formatted(product));
+        write(product + "/src/main/java/" + product + "/Guard.java", """
+                package %s;
+                @Proving(Promises.ENFORCED)
+                public class Guard {}
+                """.formatted(product));
+        write(product + "/src/test/java/" + product + "/GuardTest.java", """
+                package %s;
+                public class GuardTest {
+                    @Proving(Promises.KEPT)
+                    void holds() {}
+                }
+                """.formatted(product));
+    }
+
+    @Test
+    @DisplayName("a module applying the plugin carries its catalogue, its production citations "
+            + "under the production name and its tests' citations under the tested name, "
+            + "neither overwriting the other")
+    void theJarCarriesBothIndexes() throws IOException {
+        try (JarFile jar = new JarFile(jarOf("one").toFile())) {
+            assertEquals("one.Promises", read(jar, "META-INF/promise/catalogues"));
+            assertEquals("one.Guard=one.Promises:ENFORCED", read(jar, Proofs.INDEX));
+            assertEquals("one.GuardTest#holds=one.Promises:KEPT",
+                    read(jar, Proofs.TESTED_INDEX));
+            assertNull(jar.getEntry("one/GuardTest.class"),
+                    "the jar carries its tests' citations, not its tests");
+        }
+    }
+
+    @Test
+    @DisplayName("the jar waits for the tests to compile and not for them to run")
+    void theJarDoesNotWaitForTheTests() {
+        assertEquals(TaskOutcome.SUCCESS, result.task(":one:compileTestJava").getOutcome());
+        assertNull(result.task(":one:test"), "building the jar ran the tests");
+    }
+
+    @Test
+    @DisplayName("a module that does not apply the plugin is unchanged: no index the plugin "
+            + "would have put there")
+    void aModuleWithoutThePluginIsUnchanged() throws IOException {
+        try (JarFile jar = new JarFile(jarOf("plain").toFile())) {
+            assertNull(jar.getEntry(Proofs.TESTED_INDEX));
+            assertNull(jar.getEntry(Proofs.INDEX));
+            assertNull(jar.getEntry("META-INF/promise/catalogues"));
+        }
+        assertNull(result.task(":plain:compileTestJava"),
+                "a module without the plugin compiled its tests to build its jar");
+    }
+
+    @Test
+    @DisplayName("on one classpath, two products' jars answer the tested citations of both, and "
+            + "production code's citation of a promise proves nothing")
+    void twoProductsJarsAnswerForBoth() throws Exception {
+        try (URLClassLoader loader = new URLClassLoader(
+                new URL[] {jarOf("one").toUri().toURL(), jarOf("two").toUri().toURL()},
+                getClass().getClassLoader())) {
+            Proofs proofs = Proofs.load(loader);
+            assertEquals(Set.of("one.GuardTest#holds"),
+                    proofs.citing(constant(loader, "one.Promises", "KEPT")));
+            assertEquals(Set.of("two.GuardTest#holds"),
+                    proofs.citing(constant(loader, "two.Promises", "KEPT")));
+            Promise enforced = constant(loader, "two.Promises", "ENFORCED");
+            assertEquals(Set.of("two.Guard"), proofs.enforcing(enforced));
+            assertTrue(!proofs.cited(enforced), "enforcing a promise proved it");
+        }
+    }
+
+    private Path jarOf(String product) throws IOException {
+        try (var jars = Files.list(build.resolve(product + "/build/libs"))) {
+            return jars.filter(path -> path.toString().endsWith(".jar")).findFirst()
+                    .orElseThrow(() -> new AssertionError(product + " built no jar"));
+        }
+    }
+
+    private static String read(JarFile jar, String name) throws IOException {
+        ZipEntry entry = jar.getEntry(name);
+        assertNotNull(entry, name + " is not in " + jar.getName());
+        return new String(jar.getInputStream(entry).readAllBytes(), StandardCharsets.UTF_8)
+                .strip();
+    }
+
+    private static Promise constant(ClassLoader loader, String enumName, String name)
+            throws Exception {
+        for (Object value : Class.forName(enumName, true, loader).getEnumConstants()) {
+            if (((Enum<?>) value).name().equals(name)) {
+                return (Promise) value;
+            }
+        }
+        throw new AssertionError(enumName + "." + name);
+    }
+
+    private void write(String path, String content) throws IOException {
+        Path file = build.resolve(path);
+        Files.createDirectories(file.getParent());
+        Files.writeString(file, content);
+    }
+}

@@ -1,11 +1,13 @@
 // Requirements as code: promises declared once, cited everywhere, composed
-// across products. Two artifacts, published together under one version.
+// across products. Three artifacts — the framework, its JUnit assertions and
+// its Gradle plugin — published together under one version.
 
 val projectUrl = "https://github.com/jengu-net/promise"
 
 val blurbs = mapOf(
     "promise" to "Requirements as code: promises declared once, cited everywhere, composed across products.",
     "promise-proving" to "JUnit assertions that name the promise they prove.",
+    "promise-gradle-plugin" to "Wires the promise framework into a module's build, and packs its tests' citations into its jar.",
 )
 
 subprojects {
@@ -47,9 +49,25 @@ subprojects {
                 }
             }
         }
+        repositories {
+            // Inside this build only: where the plugin's functional tests
+            // resolve the framework from, as a product's build resolves it
+            // from the project's repository.
+            maven {
+                name = "Functional"
+                url = uri(rootProject.layout.buildDirectory.dir("functional-repo"))
+            }
+        }
         publications {
-            register<MavenPublication>("maven") {
-                from(components["java"])
+            // A plugin module gets its publications from java-gradle-plugin —
+            // the artifact and the marker a plugin id resolves through — and
+            // a second one from the same component would publish it twice.
+            if (project.name != "gradle-plugin") {
+                register<MavenPublication>("maven") {
+                    from(components["java"])
+                }
+            }
+            withType<MavenPublication>().configureEach {
                 pom {
                     name.set(artifactId)
                     description.set(provider { blurbs[artifactId] ?: blurbs.getValue("promise") })
@@ -83,7 +101,7 @@ subprojects {
     if (!signingKey.isNullOrBlank()) {
         configure<SigningExtension> {
             useInMemoryPgpKeys(signingKey, signingPassword)
-            sign(the<PublishingExtension>().publications["maven"])
+            sign(the<PublishingExtension>().publications)
         }
     }
 }
