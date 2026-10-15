@@ -105,3 +105,35 @@ subprojects {
         }
     }
 }
+
+// ── the toolset's own ledger ─────────────────────────────────────────────
+// What the plugin draws for a product, drawn here by hand: this is the one
+// build that cannot apply the plugin, because it is the build that makes it.
+// It reads what the two modules ship — the framework, and the plugin's jar
+// with its tests' citations — against both modules' test results, with the
+// toolset's own catalogue in, since here the toolset is the subject.
+evaluationDependsOnChildren()
+
+tasks.register<JavaExec>("promiseReport") {
+    group = "verification"
+    description = "Draws the toolset's ledger: what it promises, and what its last test run proved."
+    val reports = layout.buildDirectory.dir("reports/promise").get().asFile
+    val page = reports.resolve("index.html")
+    val summary = reports.resolve("summary.md")
+    classpath = files(project(":promise").tasks.named("jar"),
+        project(":gradle-plugin").tasks.named("jar"))
+    mainClass.set("cloud.jengu.promise.HtmlReport")
+    args("--out", page.path, "--summary", summary.path, "--title", "promise", "--strict",
+        "--results", project(":promise").layout.buildDirectory.dir("test-results").get().asFile.path,
+        "--results", project(":gradle-plugin").layout.buildDirectory.dir("test-results").get().asFile.path)
+    outputs.files(page, summary)
+    // Whatever the last run left, which no input declaration describes.
+    outputs.upToDateWhen { false }
+    subprojects.forEach { sub -> mustRunAfter(sub.tasks.withType<Test>()) }
+    doLast {
+        // In a GitHub Actions job, the summary joins the job's own page.
+        System.getenv("GITHUB_STEP_SUMMARY")?.takeIf { it.isNotBlank() }?.let { target ->
+            java.io.File(target).appendText(summary.readText() + "\n")
+        }
+    }
+}

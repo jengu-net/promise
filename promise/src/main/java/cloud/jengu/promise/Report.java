@@ -37,8 +37,11 @@ public final class Report {
 
     private static void section(StringBuilder out, Registry.Model model, Classified classified) {
         out.append("\n### ").append(classified.code()).append(" — ")
-                .append(classified.title()).append("\n\n")
-                .append(line(model.coverage(classified)))
+                .append(classified.title()).append("\n\n");
+        if (classified.description() != null) {
+            out.append(classified.description()).append("\n\n");
+        }
+        out.append(line(model.coverage(classified)))
                 .append("\n\n| promise | status | proven by |\n|---|---|---|\n");
         for (Promise promise : classified.promises()) {
             out.append("| ").append(model.codeOf(promise));

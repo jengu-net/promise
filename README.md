@@ -280,6 +280,52 @@ from, and every other product's evidence is still answered. So a page draws
 what it can, and a gate refuses while `unreadable()` is not empty. Both get
 the same answer from the same run.
 
+### The ledger: one page, and the job that shows it
+
+```sh
+./gradlew build promiseReport
+```
+
+`promiseReport` draws the **ledger**: one self-contained HTML page of what the
+module promises and what its last test run proved. It has a tab for each kind
+of group (stories, features, qualities, constraints and areas), and each group
+shows its description, its promises and a progress bar of how many are kept
+and passing. It writes `build/reports/promise/index.html` and a short
+`summary.md`.
+
+- It reads what the module ships, its jar and runtime classpath, against
+  `build/test-results`. It runs after the tests when both are asked for, and
+  never runs them itself, so it can still draw the ledger of a failed run.
+- Applied to a root project that is not a Java module, the plugin draws one
+  ledger over every subproject that applies it.
+- The framework's own promises are left out of a product's ledger, except
+  where one of the product's groups lists them.
+- `promise { title.set("…"); strict.set(true) }` names the page, and makes
+  unreadable evidence fail the task.
+
+In a GitHub Actions job, the summary is added to the job's own summary page by
+itself, and the page can be kept with the run or published:
+
+```yaml
+      - run: ./gradlew build
+      - name: Draw the ledger
+        if: always()
+        run: ./gradlew promiseReport
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: promise-ledger
+          path: build/reports/promise/
+```
+
+To read the ledger online, hand `build/reports/promise/` to
+`actions/upload-pages-artifact` and `actions/deploy-pages`. This repository
+does that for its own ledger from `main`.
+
+The same page is available in code: `HtmlReport.render(evidence, title)`, or
+`HtmlReport.render(model, title)` without a run. A group or an area can carry a
+`description()` beside its title, and both reports show it.
+
 ## The toolset's own promises
 
 The toolset keeps its promises the way it asks a product to keep its own.

@@ -7,6 +7,11 @@ name: build
 #
 # Nothing publishes unless the build is green on exactly that commit.
 #
+# Every run draws the toolset's ledger — what it promises, and what that run's
+# tests proved — puts its summary on the job's page and keeps the page with the
+# run. From main it is also published to GitHub Pages, when the repository
+# variable LEDGER_PAGES is 'true' and Pages is set to deploy from Actions.
+#
 # Jars go to the project's own public repository, named by the repository
 # variable ARTIFACT_HOST (the host serving the Maven tree at /repository/).
 # Unset, the publish is skipped rather than failed: a destination that does
@@ -50,6 +55,39 @@ jobs:
           fi
       - name: Build and test
         run: ./gradlew build --no-daemon ${{ steps.version.outputs.gradle_args }}
+      - name: Draw the ledger
+        # Whatever the tests came to: the ledger of a red run is the one most
+        # worth reading. Its summary joins this job's own page.
+        if: always() && steps.version.outcome == 'success'
+        run: ./gradlew promiseReport --no-daemon ${{ steps.version.outputs.gradle_args }}
+      - name: Keep the ledger with the run
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: promise-ledger
+          path: build/reports/promise/
+          if-no-files-found: ignore
+      - name: Hand the ledger to Pages
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.LEDGER_PAGES == 'true'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/reports/promise/
+
+  pages:
+    needs: build
+    # The ledger of main, where anybody can read it; never from a pull request.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.LEDGER_PAGES == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
 
   publish:
     needs: build

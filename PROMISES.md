@@ -6,6 +6,8 @@
 
 ### FEAT-PROMISE-DECLARING — Declaring promises: once, by name, in catalogues that compose
 
+A promise is an enum constant whose name is its code, so nothing can cite one that does not exist. Catalogues register themselves as they compile, and several products' catalogues compose into one graph, groups and areas included. What nobody can state yet is declared as a gap and counted.
+
 coverage: 6/6 — {PROVEN=6}
 
 | promise | status | proven by |
@@ -19,6 +21,8 @@ coverage: 6/6 — {PROVEN=6}
 
 ### FEAT-PROMISE-CITING — Citing promises: from tests that prove them and code that enforces them
 
+A test says which promises it proves with its product's own annotation, and production code may say where it enforces one. Both are indexed as they compile, under names of their own, and travel in the module's jar. Only a test's citation proves.
+
 coverage: 4/4 — {PROVEN=4}
 
 | promise | status | proven by |
@@ -30,7 +34,9 @@ coverage: 4/4 — {PROVEN=4}
 
 ### FEAT-PROMISE-READING — Reading the graph and the evidence behind it
 
-coverage: 4/4 — {PROVEN=4}
+From a classpath, the composed graph: every promise's status, every group's coverage, and with a run's JUnit results each promise's standing. One product's unreadable evidence is reported and never takes another's down. The same reading draws the markdown report and the HTML ledger.
+
+coverage: 5/5 — {PROVEN=5}
 
 | promise | status | proven by |
 |---|---|---|
@@ -38,11 +44,15 @@ coverage: 4/4 — {PROVEN=4}
 | REQ-PROMISE-COVERAGE-IS-A-FOLD | PROVEN | cloud.jengu.promise.StatusAndCoverageTest#coverageIsAFold |
 | REQ-PROMISE-STANDING-IS-READ-FROM-THE-RUN | PROVEN | cloud.jengu.promise.EvidenceTest#failingWins<br>cloud.jengu.promise.EvidenceTest#noResult<br>cloud.jengu.promise.EvidenceTest#passingAndUncited<br>cloud.jengu.promise.EvidenceTest#resultsFromTheClasspath |
 | REQ-PROMISE-ONE-PRODUCTS-UNREADABLE-EVIDENCE-IS-ITS-OWN | PROVEN | cloud.jengu.promise.EvidenceTest#oneProductsUnreadableIndexIsReported |
+| REQ-PROMISE-THE-LEDGER-IS-ONE-PAGE | PROVEN | cloud.jengu.promise.HtmlReportTest#aCatalogueCannotWriteMarkupIntoThePage<br>cloud.jengu.promise.HtmlReportTest#theLedgerCarriesTheModelAndTheRun<br>cloud.jengu.promise.HtmlReportTest#theSummaryLeadsWithWhatIsKept<br>cloud.jengu.promise.HtmlReportTest#withoutARunThereIsNoStanding |
 
 ### FEAT-PROMISE-BUILDING — Wiring a product's build
 
-coverage: 1/1 — {ASSURED=1}
+One Gradle plugin is all a module applies: it indexes the module's catalogues and citations, packs the tests' citations into its jar, and draws the ledger of what the module promises and what its last run proved.
+
+coverage: 2/2 — {ASSURED=2}
 
 | promise | status | proven by |
 |---|---|---|
 | REQ-PROMISE-APPLYING-THE-PLUGIN-IS-ALL-A-MODULE-DOES | ASSURED |  |
+| REQ-PROMISE-THE-PLUGIN-DRAWS-THE-LEDGER | ASSURED |  |
