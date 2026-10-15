@@ -148,6 +148,32 @@ class HtmlReportTest {
     }
 
     @Test
+    @DisplayName("the badge says how much is kept and how the run went, amber while a promise "
+            + "waits for a test, red when a citing test failed, and claims no run it was not given")
+    @ProvingToolset(ToolsetPromises.THE_BADGE_SAYS_WHAT_THE_LEDGER_SAYS)
+    void theBadgeSaysWhatTheLedgerSays() throws Exception {
+        try (URLClassLoader loader = loader(shop())) {
+            String waiting = HtmlReport.badge(
+                    Evidence.read(loader, List.of(run("shop.CheckoutTest"))), true);
+            assertTrue(waiting.startsWith("<svg xmlns=\"http://www.w3.org/2000/svg\""), waiting);
+            assertTrue(waiting.contains("aria-label=\"promises: 50% kept · 1/2 passing\""), waiting);
+            assertTrue(waiting.contains("fill=\"#b9802f\""), "a ledger with a promise waiting "
+                    + "for a test is not amber: " + waiting);
+
+            Path failed = Files.createTempDirectory("run");
+            Files.writeString(failed.resolve("TEST-shop.CheckoutTest.xml"),
+                    "<testsuite name=\"shop.CheckoutTest\" tests=\"1\"><testcase name=\"totals\" "
+                            + "classname=\"shop.CheckoutTest\"><failure message=\"no\"/></testcase></testsuite>");
+            String red = HtmlReport.badge(Evidence.read(loader, List.of(failed)), true);
+            assertTrue(red.contains("aria-label=\"promises: 50% kept · 1 failing\""), red);
+            assertTrue(red.contains("fill=\"#b4433a\""), "a failing ledger is not red: " + red);
+
+            String noRun = HtmlReport.badge(Evidence.read(loader, List.of()), true);
+            assertTrue(noRun.contains("aria-label=\"promises: 50% kept\""), noRun);
+        }
+    }
+
+    @Test
     @DisplayName("without a run, the ledger shows status alone and claims no standing")
     @ProvingToolset(ToolsetPromises.THE_LEDGER_IS_ONE_PAGE)
     void withoutARunThereIsNoStanding() throws Exception {

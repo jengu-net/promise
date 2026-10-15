@@ -1,5 +1,7 @@
 # promise
 
+[![Promise ledger](https://jengu-net.github.io/promise/main/badge.svg)](https://jengu-net.github.io/promise/main/)
+
 Requirements as code: promises declared once, kept close to the code that
 keeps them, and proven by the tests that check them.
 
@@ -290,8 +292,10 @@ the same answer from the same run.
 module promises and what its last test run proved. It has a tab for each kind
 of group (stories, features, qualities, constraints and areas), and each group
 shows its description, its promises and a progress bar of how many are kept
-and passing. It writes `build/reports/promise/index.html` and a short
-`summary.md`.
+and passing. It writes `build/reports/promise/index.html`, a short
+`summary.md`, and `badge.svg`: how much is kept and how the last run went, in
+green when everything is kept and nothing fails, amber while promises wait for
+a test, and red when a test citing one failed.
 
 - It reads what the module ships, its jar and runtime classpath, against
   `build/test-results`. It runs after the tests when both are asked for, and
@@ -339,6 +343,14 @@ in two places:
 - a **promise ledger** commit status beside the other checks, reading for
   example "100% kept · 17 passing, 0 failing", whose *Details* open the page;
 - an *Open the promise ledger* link on the run's summary.
+
+The badge of the default branch's latest build is then at
+`https://<owner>.github.io/<repository>/main/badge.svg`. A README shows it,
+linked to the page, as this one does at its top:
+
+```markdown
+[![Promise ledger](https://<owner>.github.io/<repository>/main/badge.svg)](https://<owner>.github.io/<repository>/main/)
+```
 
 It runs none of the build's code, and it is the only job given write
 permission. A pull request from a fork cannot write, so its ledger stays an

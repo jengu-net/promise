@@ -120,13 +120,15 @@ tasks.register<JavaExec>("promiseReport") {
     val reports = layout.buildDirectory.dir("reports/promise").get().asFile
     val page = reports.resolve("index.html")
     val summary = reports.resolve("summary.md")
+    val badge = reports.resolve("badge.svg")
     classpath = files(project(":promise").tasks.named("jar"),
         project(":gradle-plugin").tasks.named("jar"))
     mainClass.set("cloud.jengu.promise.HtmlReport")
-    args("--out", page.path, "--summary", summary.path, "--title", "promise", "--strict",
+    args("--out", page.path, "--summary", summary.path, "--badge", badge.path,
+        "--title", "promise", "--strict",
         "--results", project(":promise").layout.buildDirectory.dir("test-results").get().asFile.path,
         "--results", project(":gradle-plugin").layout.buildDirectory.dir("test-results").get().asFile.path)
-    outputs.files(page, summary)
+    outputs.files(page, summary, badge)
     // Whatever the last run left, which no input declaration describes.
     outputs.upToDateWhen { false }
     subprojects.forEach { sub -> mustRunAfter(sub.tasks.withType<Test>()) }

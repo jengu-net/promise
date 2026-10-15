@@ -86,6 +86,11 @@ public enum ToolsetPromises implements Promise {
             + "description, its promises and how many are kept and passing, and nothing a "
             + "catalogue holds written into the page as markup."),
 
+    THE_BADGE_SAYS_WHAT_THE_LEDGER_SAYS(
+            "Beside the page, the ledger draws a badge saying how much is kept and how the "
+            + "last run went: green when everything is kept and nothing fails, amber while "
+            + "promises wait for a test, red when a test citing one failed."),
+
     THE_PLUGIN_DRAWS_THE_LEDGER(
             "A module applying the Gradle plugin draws its ledger and a markdown summary "
             + "from its jar, its runtime classpath and its tests' results; in a GitHub "
