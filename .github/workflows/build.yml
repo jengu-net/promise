@@ -8,9 +8,9 @@ name: build
 # Nothing publishes unless the build is green on exactly that commit.
 #
 # Every run draws the toolset's ledger — what it promises, and what that run's
-# tests proved — puts its summary on the job's page and keeps the page with the
-# run. From main it is also published to GitHub Pages, when the repository
-# variable LEDGER_PAGES is 'true' and Pages is set to deploy from Actions.
+# tests proved — puts its summary on the job's page, keeps the page with the
+# run, and publishes it as a page of its own on GitHub Pages, linked from the
+# build result (ledger-page.yml, which any product can call the same way).
 #
 # Jars go to the project's own public repository, named by the repository
 # variable ARTIFACT_HOST (the host serving the Maven tree at /repository/).
@@ -67,27 +67,15 @@ jobs:
           name: promise-ledger
           path: build/reports/promise/
           if-no-files-found: ignore
-      - name: Hand the ledger to Pages
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.LEDGER_PAGES == 'true'
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: build/reports/promise/
 
-  pages:
+  ledger-page:
     needs: build
-    # The ledger of main, where anybody can read it; never from a pull request.
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.LEDGER_PAGES == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # Whatever the build came to: a red run's ledger is the one most worth opening.
+    if: always()
     permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
+      contents: write
+      statuses: write
+    uses: ./.github/workflows/ledger-page.yml
 
   publish:
     needs: build

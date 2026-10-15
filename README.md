@@ -318,9 +318,33 @@ itself, and the page can be kept with the run or published:
           path: build/reports/promise/
 ```
 
-To read the ledger online, hand `build/reports/promise/` to
-`actions/upload-pages-artifact` and `actions/deploy-pages`. This repository
-does that for its own ledger from `main`.
+To open the ledger as a page from the build result, add the reusable
+workflow beside the build job:
+
+```yaml
+  ledger-page:
+    needs: build
+    if: always()
+    permissions:
+      contents: write
+      statuses: write
+    uses: jengu-net/promise/.github/workflows/ledger-page.yml@<version>
+```
+
+It publishes each run's ledger to the repository's `gh-pages` branch, served
+by GitHub Pages: `/runs/<run id>/` for every run and `/main/` for the default
+branch, with the newest 40 runs kept. It links the page from the build result
+in two places:
+
+- a **promise ledger** commit status beside the other checks, reading for
+  example "100% kept · 17 passing, 0 failing", whose *Details* open the page;
+- an *Open the promise ledger* link on the run's summary.
+
+It runs none of the build's code, and it is the only job given write
+permission. A pull request from a fork cannot write, so its ledger stays an
+artifact. Pages serves the `gh-pages` branch once the branch exists; if it
+does not, choose that branch under the repository's Pages settings. This
+repository's own build calls it the same way.
 
 The same page is available in code: `HtmlReport.render(evidence, title)`, or
 `HtmlReport.render(model, title)` without a run. A group or an area can carry a
