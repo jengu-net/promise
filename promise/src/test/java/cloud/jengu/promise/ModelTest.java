@@ -13,6 +13,7 @@ class ModelTest {
 
     @Test
     @DisplayName("a catalogue is read whole: planned constants and gaps nobody cites are in the model")
+    @ProvingToolset({ToolsetPromises.CATALOGUE_READ_WHOLE, ToolsetPromises.GAP_IS_FIRST_CLASS})
     void readWhole() {
         Registry.Model model = Registry.of(TestPromises.class, TestStories.class).model();
         List<String> codes = model.promises().stream().map(model::codeOf).toList();
@@ -26,6 +27,7 @@ class ModelTest {
 
     @Test
     @DisplayName("the classification link is inverted once, derived never declared")
+    @ProvingToolset(ToolsetPromises.DOWN_LINKS_ONLY)
     void downLinksOnly() {
         Registry.Model model = Registry.of(TestPromises.class, TestStories.class).model();
         assertEquals(List.of(TestStories.FIRST_CASE),
@@ -36,6 +38,7 @@ class ModelTest {
 
     @Test
     @DisplayName("same-code areas merge; the merged area covers both catalogues' ground")
+    @ProvingToolset(ToolsetPromises.AREAS_MERGE_BY_CODE)
     void areasMergeByCode() {
         Registry.Model model = Registry.of(
                 TestStories.class, TestAreas.class, TestAreasElsewhere.class).model();
@@ -49,6 +52,7 @@ class ModelTest {
 
     @Test
     @DisplayName("two same-code areas with conflicting titles are refused, both named")
+    @ProvingToolset(ToolsetPromises.AREAS_MERGE_BY_CODE)
     void conflictingAreasRefused() {
         IllegalStateException refused = assertThrows(IllegalStateException.class,
                 () -> Registry.of(TestAreas.class, TestAreasConflicting.class).model());

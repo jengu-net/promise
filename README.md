@@ -280,6 +280,15 @@ from, and every other product's evidence is still answered. So a page draws
 what it can, and a gate refuses while `unreadable()` is not empty. Both get
 the same answer from the same run.
 
+## The toolset's own promises
+
+The toolset keeps its promises the way it asks a product to keep its own.
+They are declared in its catalogue, `ToolsetPromises` (`REQ-PROMISE-…`),
+grouped by `ToolsetFeatures`, and proven by its own tests, whose citations
+travel in its jar. A product composing the framework reads them beside its
+own, proven. [PROMISES.md](PROMISES.md) is their page, generated from the
+catalogue and the citations, and a test refuses a page that has gone stale.
+
 ## Building
 
 ```sh

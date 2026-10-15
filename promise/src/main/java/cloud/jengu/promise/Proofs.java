@@ -17,7 +17,7 @@ import java.util.Set;
  * The citation index: which sites cite which promises, and as what.
  *
  * <p>Written at each compilation's own compile time by {@link CatalogueProcessor}
- * (REQ-DBO-PRM-PROOFS-INDEXED-AT-COMPILE-TIME) — one line per site,
+ * (REQ-PROMISE-PROOFS-INDEXED-AT-COMPILE-TIME) — one line per site,
  * {@code binary.Class#member=enum.Class:CONSTANT,CONSTANT} — and read here by
  * resolving each named constant against the loaded enum, so a citation that
  * outlives its declaration fails the load rather than reporting quietly.
@@ -160,8 +160,10 @@ public final class Proofs {
         return sitesByCode.get(Kind.TESTED).containsKey(promise.code());
     }
 
+    /** Sorted, so a report drawn from them reads the same on every machine and every run. */
     private Set<String> sites(Kind kind, Promise promise) {
-        return Set.copyOf(sitesByCode.get(kind).getOrDefault(promise.code(), Set.of()));
+        return java.util.Collections.unmodifiableSortedSet(new java.util.TreeSet<>(
+                sitesByCode.get(kind).getOrDefault(promise.code(), Set.of())));
     }
 
     private void add(Kind kind, String code, String site) {

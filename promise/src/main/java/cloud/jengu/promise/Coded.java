@@ -5,7 +5,7 @@ package cloud.jengu.promise;
  *
  * <p>The code is computed, never stored: there is no string to mistype and
  * no generator to trust, so a citation cannot drift from a declaration
- * (REQ-DBO-PRM-NAME-IS-THE-CODE).
+ * (REQ-PROMISE-NAME-IS-THE-CODE).
  *
  * <p>{@code getDeclaringClass()} rather than {@code getClass()}, and that is
  * a trap with a proving test behind it: an enum constant WITH A BODY is an

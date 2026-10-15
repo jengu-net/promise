@@ -18,7 +18,7 @@ import java.util.TreeSet;
 /**
  * Writes every {@code @Catalogue}-annotated enum's binary name into
  * {@link Registry#INDEX} at the compiling component's own compile time
- * (REQ-DBO-PRM-REGISTERED-AT-COMPILE-TIME).
+ * (REQ-PROMISE-REGISTERED-AT-COMPILE-TIME).
  *
  * <p>Discovery is paid where the set of annotated types is already known —
  * the compiler hands them over — so no classpath is ever swept, and an index
@@ -53,7 +53,7 @@ public final class CatalogueProcessor extends AbstractProcessor {
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment round) {
-        // The second concern (REQ-DBO-PRM-PROOFS-INDEXED-AT-COMPILE-TIME):
+        // The second concern (REQ-PROMISE-PROOFS-INDEXED-AT-COMPILE-TIME):
         // any annotation whose TYPE carries @Cites is a product's own proving
         // annotation, and every site using it is a citation. Read from the
         // mirror, so the index regenerates on every compile — a renamed test

@@ -16,7 +16,7 @@ import java.security.MessageDigest;
  * <p>A promise nobody has stated yet is a {@link #gap(String)}: it compiles,
  * registers through the classification that declares it, carries a stable
  * synthetic code, and counts against coverage until promoted to a named
- * constant (REQ-DBO-PRM-GAP-IS-FIRST-CLASS). Unknown ground is named, never
+ * constant (REQ-PROMISE-GAP-IS-FIRST-CLASS). Unknown ground is named, never
  * silent.
  */
 public interface Promise extends Coded {
@@ -35,16 +35,17 @@ public interface Promise extends Coded {
      *
      * <p>Declared on the CONSTANT rather than at a proof site, because that is
      * where the reason lives: there is no test to hang it on, and status stays
-     * derived (REQ-DBO-PRM-STATUS-IS-DERIVED).
+     * derived (REQ-PROMISE-STATUS-IS-DERIVED).
      *
      * <p>Two kinds of ground reach here, and the note has to say which.
      * <b>Review</b> — a property somebody checked and no executable test
-     * covers. And <b>proven but uncitable</b> — a test exists, passes, and
-     * structurally cannot name the constant: this framework's own promises are
-     * the standing case, since a catalogue that cited itself from here would be
-     * a dependency cycle. Calling the second one PLANNED would say nobody built
-     * it, and calling it PROVEN would claim a citation that does not exist;
-     * ASSURED with a note that names the test says the true thing.
+     * covers. And <b>proven where this classpath cannot see it</b> — a test
+     * exists, passes and cites the constant, from a jar a reader may not hold:
+     * the toolset's promise about its Gradle plugin is the standing case,
+     * proven by the plugin's tests and carried in the plugin's jar. Calling it
+     * PLANNED there would say nobody built it; ASSURED with a note that names
+     * the test says the true thing, and a classpath that does hold the
+     * citation reads it PROVEN.
      */
     default String assurance() {
         return null;

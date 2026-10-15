@@ -9,7 +9,7 @@ import java.util.List;
  * theme spanning stories and qualities.
  *
  * <p>An area is not owned by any one catalogue: composition merges same-code
- * areas across products (REQ-DBO-PRM-AREAS-MERGE-BY-CODE), so one area may
+ * areas across products (REQ-PROMISE-AREAS-MERGE-BY-CODE), so one area may
  * span several catalogues' classifications. Two same-code areas with
  * conflicting titles are refused rather than one being picked.
  */

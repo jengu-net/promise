@@ -7,7 +7,7 @@ import java.lang.annotation.Target;
 
 /**
  * Marks a product's own proving annotation
- * (REQ-DBO-PRM-CITATION-IS-TYPED).
+ * (REQ-PROMISE-CITATION-IS-TYPED).
  *
  * <p>A citation must be typed to the product's own catalogue enum — a wrong
  * constant a compile error — and the framework cannot know any product's

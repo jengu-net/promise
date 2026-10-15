@@ -40,6 +40,7 @@ class CatalogueProcessorTest {
 
     @Test
     @DisplayName("compiling an annotated catalogue leaves the registration index in the output")
+    @ProvingToolset(ToolsetPromises.REGISTERED_AT_COMPILE_TIME)
     void registrationIsWrittenAtCompileTime() throws Exception {
         Path out = compiled("fixture.FixturePromises", FIXTURE);
         Path index = out.resolve(Registry.INDEX);
@@ -49,11 +50,10 @@ class CatalogueProcessorTest {
 
     @Test
     @DisplayName("the registry loads the compiled catalogue whole, from the index alone")
+    @ProvingToolset({ToolsetPromises.REGISTERED_AT_COMPILE_TIME, ToolsetPromises.CATALOGUE_READ_WHOLE})
     void registryLoadsWhatCompilationLeftBehind() throws Exception {
         Path out = compiled("fixture.FixturePromises", FIXTURE);
-        try (URLClassLoader loader = new URLClassLoader(
-                new java.net.URL[] {out.toUri().toURL()},
-                CatalogueProcessorTest.class.getClassLoader())) {
+        try (URLClassLoader loader = new Isolated(out.toUri().toURL())) {
             Registry registry = Registry.load(loader);
             assertEquals(1, registry.catalogues().size());
             Registry.Model model = registry.model();
@@ -64,6 +64,7 @@ class CatalogueProcessorTest {
 
     @Test
     @DisplayName("@Catalogue on a non-enum is a compile error, not a runtime surprise")
+    @ProvingToolset(ToolsetPromises.REGISTERED_AT_COMPILE_TIME)
     void nonEnumIsACompileError() throws Exception {
         DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
         boolean ok = compile("fixture.NotAnEnum", """

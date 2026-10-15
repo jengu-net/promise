@@ -72,6 +72,7 @@ class EvidenceTest {
     @Test
     @DisplayName("a promise every citing class of which ran with no failure, error or skip is "
             + "passing, and one no test cites is uncited however much code enforces it")
+    @ProvingToolset(ToolsetPromises.STANDING_IS_READ_FROM_THE_RUN)
     void passingAndUncited() throws Exception {
         Path jar = product("one");
         Path run = Files.createTempDirectory("run");
@@ -90,6 +91,7 @@ class EvidenceTest {
     @Test
     @DisplayName("a promise is failing when any class citing it failed or erred, whatever the "
             + "others did")
+    @ProvingToolset(ToolsetPromises.STANDING_IS_READ_FROM_THE_RUN)
     void failingWins() throws Exception {
         Path jar = product("one", source("one.OtherTest", SECOND));
         Path run = Files.createTempDirectory("run");
@@ -112,6 +114,7 @@ class EvidenceTest {
     @Test
     @DisplayName("a promise has no result when a class citing it never ran, held no tests, or "
             + "skipped one")
+    @ProvingToolset(ToolsetPromises.STANDING_IS_READ_FROM_THE_RUN)
     void noResult() throws Exception {
         Path jar = product("one", source("one.OtherTest", SECOND));
         Promise both;
@@ -149,6 +152,7 @@ class EvidenceTest {
     @Test
     @DisplayName("results that travel with the code are read from the classpath, with no root "
             + "named at all")
+    @ProvingToolset(ToolsetPromises.STANDING_IS_READ_FROM_THE_RUN)
     void resultsFromTheClasspath() throws Exception {
         Path jar = product("one");
         Path packed = Files.createTempDirectory("packed");
@@ -165,6 +169,7 @@ class EvidenceTest {
     @Test
     @DisplayName("an index one product carries that cannot be read against the classpath is "
             + "reported by name, and every other product's evidence is still answered")
+    @ProvingToolset(ToolsetPromises.ONE_PRODUCTS_UNREADABLE_EVIDENCE_IS_ITS_OWN)
     void oneProductsUnreadableIndexIsReported() throws Exception {
         Path first = product("one");
         Path second = product("two");

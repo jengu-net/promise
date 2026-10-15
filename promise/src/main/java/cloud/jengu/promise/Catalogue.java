@@ -9,8 +9,8 @@ import java.lang.annotation.Target;
  * Marks an enum as a promise catalogue and names its namespace.
  *
  * <p>The namespace prefixes every constant's derived code
- * ({@code REQ-DBO} + {@code SHAPE_WRITTEN_UNDER_STAMPED} →
- * {@code REQ-DBO-SHAPE-WRITTEN-UNDER-STAMPED}), which is what keeps codes
+ * ({@code REQ-SHOP} + {@code A_PAID_ORDER_IS_NEVER_CHANGED} →
+ * {@code REQ-SHOP-A-PAID-ORDER-IS-NEVER-CHANGED}), which is what keeps codes
  * globally unique when several products' catalogues are composed into one
  * graph. Promises, classifications and areas each live in their own enums,
  * so each kind carries its own namespace ({@code REQ-…}, {@code US-…},

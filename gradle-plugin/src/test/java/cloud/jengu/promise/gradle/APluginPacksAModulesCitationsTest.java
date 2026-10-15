@@ -2,6 +2,7 @@ package cloud.jengu.promise.gradle;
 
 import cloud.jengu.promise.Promise;
 import cloud.jengu.promise.Proofs;
+import cloud.jengu.promise.ToolsetPromises;
 import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.GradleRunner;
 import org.gradle.testkit.runner.TaskOutcome;
@@ -122,6 +123,7 @@ class APluginPacksAModulesCitationsTest {
     @DisplayName("a module applying the plugin carries its catalogue, its production citations "
             + "under the production name and its tests' citations under the tested name, "
             + "neither overwriting the other")
+    @ProvingToolset({ToolsetPromises.APPLYING_THE_PLUGIN_IS_ALL_A_MODULE_DOES, ToolsetPromises.TESTS_CITATIONS_TRAVEL_APART})
     void theJarCarriesBothIndexes() throws IOException {
         try (JarFile jar = new JarFile(jarOf("one").toFile())) {
             assertEquals("one.Promises", read(jar, "META-INF/promise/catalogues"));
@@ -135,6 +137,7 @@ class APluginPacksAModulesCitationsTest {
 
     @Test
     @DisplayName("the jar waits for the tests to compile and not for them to run")
+    @ProvingToolset(ToolsetPromises.APPLYING_THE_PLUGIN_IS_ALL_A_MODULE_DOES)
     void theJarDoesNotWaitForTheTests() {
         assertEquals(TaskOutcome.SUCCESS, result.task(":one:compileTestJava").getOutcome());
         assertNull(result.task(":one:test"), "building the jar ran the tests");
@@ -143,6 +146,7 @@ class APluginPacksAModulesCitationsTest {
     @Test
     @DisplayName("a module that does not apply the plugin is unchanged: no index the plugin "
             + "would have put there")
+    @ProvingToolset(ToolsetPromises.APPLYING_THE_PLUGIN_IS_ALL_A_MODULE_DOES)
     void aModuleWithoutThePluginIsUnchanged() throws IOException {
         try (JarFile jar = new JarFile(jarOf("plain").toFile())) {
             assertNull(jar.getEntry(Proofs.TESTED_INDEX));
@@ -156,6 +160,7 @@ class APluginPacksAModulesCitationsTest {
     @Test
     @DisplayName("on one classpath, two products' jars answer the tested citations of both, and "
             + "production code's citation of a promise proves nothing")
+    @ProvingToolset({ToolsetPromises.TESTS_CITATIONS_TRAVEL_APART, ToolsetPromises.ONLY_A_TEST_PROVES})
     void twoProductsJarsAnswerForBoth() throws Exception {
         try (URLClassLoader loader = new URLClassLoader(
                 new URL[] {jarOf("one").toUri().toURL(), jarOf("two").toUri().toURL()},
@@ -169,6 +174,22 @@ class APluginPacksAModulesCitationsTest {
             assertEquals(Set.of("two.Guard"), proofs.enforcing(enforced));
             assertTrue(!proofs.cited(enforced), "enforcing a promise proved it");
         }
+    }
+
+    @Test
+    @DisplayName("the framework's own jar carries the citations its tests make, so a product "
+            + "composing it reads the toolset's promises proven")
+    @ProvingToolset(ToolsetPromises.TESTS_CITATIONS_TRAVEL_APART)
+    void theFrameworksJarCarriesItsOwnProof() {
+        // This test's classpath holds the framework as a jar, as a product's does.
+        ClassLoader loader = getClass().getClassLoader();
+        cloud.jengu.promise.Registry.Model model = cloud.jengu.promise.Registry.load(loader)
+                .model(Proofs.load(loader));
+        assertEquals(cloud.jengu.promise.PromiseStatus.PROVEN,
+                model.statusOf(ToolsetPromises.NAME_IS_THE_CODE));
+        assertTrue(model.citing(ToolsetPromises.NAME_IS_THE_CODE).stream()
+                        .anyMatch(site -> site.startsWith("cloud.jengu.promise.CodeAndGapTest#")),
+                model.citing(ToolsetPromises.NAME_IS_THE_CODE).toString());
     }
 
     private Path jarOf(String product) throws IOException {
