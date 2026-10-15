@@ -37,24 +37,46 @@ public final class Registry {
     /** Every catalogue registered on {@code loader}'s classpath. */
     public static Registry load(ClassLoader loader) {
         LinkedHashSet<Class<?>> found = new LinkedHashSet<>();
+        for (URL index : indexes(loader)) {
+            found.addAll(read(loader, index));
+        }
+        return new Registry(new ArrayList<>(found));
+    }
+
+    /** Every catalogue index the loader can see, in the loader's order. */
+    static List<URL> indexes(ClassLoader loader) {
+        List<URL> found = new ArrayList<>();
         try {
             Enumeration<URL> indexes = loader.getResources(INDEX);
             while (indexes.hasMoreElements()) {
-                URL index = indexes.nextElement();
-                try (BufferedReader in = new BufferedReader(
-                        new InputStreamReader(index.openStream(), StandardCharsets.UTF_8))) {
-                    String line;
-                    while ((line = in.readLine()) != null) {
-                        if (!line.isBlank()) {
-                            found.add(catalogueClass(loader, line.strip(), index));
-                        }
-                    }
+                found.add(indexes.nextElement());
+            }
+        } catch (IOException e) {
+            throw new IllegalStateException("could not list " + INDEX, e);
+        }
+        return found;
+    }
+
+    /** The catalogues one index names, each resolved; throws as {@link #load} does. */
+    static List<Class<?>> read(ClassLoader loader, URL index) {
+        List<Class<?>> found = new ArrayList<>();
+        try (BufferedReader in = new BufferedReader(
+                new InputStreamReader(index.openStream(), StandardCharsets.UTF_8))) {
+            String line;
+            while ((line = in.readLine()) != null) {
+                if (!line.isBlank()) {
+                    found.add(catalogueClass(loader, line.strip(), index));
                 }
             }
         } catch (IOException e) {
-            throw new IllegalStateException("could not read " + INDEX, e);
+            throw new IllegalStateException("could not read " + index, e);
         }
-        return new Registry(new ArrayList<>(found));
+        return found;
+    }
+
+    /** The catalogues given, already resolved. */
+    static Registry over(java.util.Collection<Class<?>> catalogues) {
+        return new Registry(new ArrayList<>(new LinkedHashSet<>(catalogues)));
     }
 
     /** The explicit form, for tools and tests. */
@@ -84,7 +106,7 @@ public final class Registry {
     private static Class<?> catalogueClass(ClassLoader loader, String name, URL index) {
         try {
             return validated(Class.forName(name, false, loader), "named by " + index);
-        } catch (ClassNotFoundException e) {
+        } catch (ClassNotFoundException | LinkageError e) {
             throw new IllegalStateException(index + " names '" + name
                     + "', which this classpath does not carry — a stale index is a build "
                     + "defect, not a skippable line", e);

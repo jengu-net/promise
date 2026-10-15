@@ -121,6 +121,12 @@ public final class Proofs {
         return new Proofs();
     }
 
+    /** Takes in every citation {@code other} holds — an index read whole on its own first. */
+    void absorb(Proofs other) {
+        other.sitesByCode.forEach((kind, byCode) -> byCode.forEach((code, sites) ->
+                sites.forEach(site -> add(kind, code, site))));
+    }
+
     /** The explicit form, for tests: each {@code site} is a test citing {@code promises}. */
     public static Proofs of(Map<String, List<Promise>> citations) {
         Proofs proofs = new Proofs();

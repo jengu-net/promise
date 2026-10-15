@@ -33,7 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class TwoIndexesTest {
 
     /** A product: its catalogue, its proving annotation, its production code and its tests. */
-    private static List<JavaFileObject> product(String pkg, String ns) {
+    static List<JavaFileObject> product(String pkg, String ns) {
         return List.of(
                 source(pkg + ".Promises", """
                         package %1$s;
@@ -56,7 +56,7 @@ class TwoIndexesTest {
                         """.formatted(pkg)));
     }
 
-    private static JavaFileObject production(String pkg) {
+    static JavaFileObject production(String pkg) {
         return source(pkg + ".Guard", """
                 package %1$s;
                 @Proving(Promises.ENFORCED_ONLY)
@@ -67,7 +67,7 @@ class TwoIndexesTest {
                 """.formatted(pkg));
     }
 
-    private static JavaFileObject tests(String pkg) {
+    static JavaFileObject tests(String pkg) {
         return source(pkg + ".GuardTest", """
                 package %1$s;
                 public class GuardTest {
@@ -169,7 +169,7 @@ class TwoIndexesTest {
         assertFalse(Files.exists(out.resolve(Proofs.INDEX)));
     }
 
-    private static Promise constant(ClassLoader loader, String enumName, String name)
+    static Promise constant(ClassLoader loader, String enumName, String name)
             throws Exception {
         for (Object value : Class.forName(enumName, true, loader).getEnumConstants()) {
             if (((Enum<?>) value).name().equals(name)) {
@@ -179,7 +179,7 @@ class TwoIndexesTest {
         throw new AssertionError(enumName + "." + name);
     }
 
-    private static URLClassLoader loader(Path... roots) throws Exception {
+    static URLClassLoader loader(Path... roots) throws Exception {
         URL[] urls = new URL[roots.length];
         for (int i = 0; i < roots.length; i++) {
             urls[i] = roots[i].toUri().toURL();
@@ -187,7 +187,7 @@ class TwoIndexesTest {
         return new URLClassLoader(urls, TwoIndexesTest.class.getClassLoader());
     }
 
-    private static void compile(Path out, String index, List<JavaFileObject> product,
+    static void compile(Path out, String index, List<JavaFileObject> product,
             List<JavaFileObject> more) throws Exception {
         DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
         assertTrue(task(out, index, product, more, diagnostics).call(),
@@ -221,7 +221,7 @@ class TwoIndexesTest {
         return task;
     }
 
-    private static JavaFileObject source(String name, String content) {
+    static JavaFileObject source(String name, String content) {
         return new SimpleJavaFileObject(
                 URI.create("string:///" + name.replace('.', '/') + ".java"),
                 JavaFileObject.Kind.SOURCE) {
