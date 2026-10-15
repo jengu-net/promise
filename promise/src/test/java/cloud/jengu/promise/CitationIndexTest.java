@@ -64,6 +64,7 @@ class CitationIndexTest {
 
     @Test
     @DisplayName("compiling a citing test writes the proofs index; the decoy is ignored")
+    @ProvingToolset({ToolsetPromises.CITATION_IS_TYPED, ToolsetPromises.PROOFS_INDEXED_AT_COMPILE_TIME})
     void citationsAreIndexedAtCompileTime() throws Exception {
         Path out = compiled();
         List<String> lines = Files.readAllLines(out.resolve(Proofs.TESTED_INDEX));
@@ -74,11 +75,10 @@ class CitationIndexTest {
 
     @Test
     @DisplayName("the loaded index joins back to the enum constants")
+    @ProvingToolset(ToolsetPromises.PROOFS_INDEXED_AT_COMPILE_TIME)
     void proofsLoadResolvesConstants() throws Exception {
         Path out = compiled();
-        try (java.net.URLClassLoader loader = new java.net.URLClassLoader(
-                new java.net.URL[] {out.toUri().toURL()},
-                CitationIndexTest.class.getClassLoader())) {
+        try (java.net.URLClassLoader loader = new Isolated(out.toUri().toURL())) {
             Proofs proofs = Proofs.load(loader);
             Object[] constants = Class.forName("fixture.FixturePromises", true, loader)
                     .getEnumConstants();

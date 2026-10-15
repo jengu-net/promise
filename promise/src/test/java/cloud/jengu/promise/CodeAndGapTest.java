@@ -12,6 +12,7 @@ class CodeAndGapTest {
 
     @Test
     @DisplayName("the constant's name is the code, prefixed by the catalogue's namespace")
+    @ProvingToolset(ToolsetPromises.NAME_IS_THE_CODE)
     void nameIsTheCode() {
         assertEquals("REQ-TEST-PLAIN-PROMISE", TestPromises.PLAIN_PROMISE.code());
         assertEquals("US-TEST-FIRST-CASE", TestStories.FIRST_CASE.code());
@@ -23,6 +24,7 @@ class CodeAndGapTest {
      */
     @Test
     @DisplayName("a constant with a body reports the same, correct code")
+    @ProvingToolset(ToolsetPromises.NAME_IS_THE_CODE)
     void bodiedConstantReportsTheSameCode() {
         assertEquals("REQ-TEST-BODIED-PROMISE", TestPromises.BODIED_PROMISE.code());
         assertEquals("a promise whose constant has a body", TestPromises.BODIED_PROMISE.text());
@@ -30,6 +32,7 @@ class CodeAndGapTest {
 
     @Test
     @DisplayName("a gap's synthetic code is stable across runs and distinct across texts")
+    @ProvingToolset(ToolsetPromises.GAP_IS_FIRST_CLASS)
     void gapCodesAreStableAndDistinct() {
         Promise first = Promise.gap("what about the second try?");
         Promise again = Promise.gap("what about the second try?");
@@ -42,6 +45,7 @@ class CodeAndGapTest {
 
     @Test
     @DisplayName("a gap without text is refused — an unnamed unknown is the silence this type ends")
+    @ProvingToolset(ToolsetPromises.GAP_IS_FIRST_CLASS)
     void aGapNeedsItsText() {
         assertThrows(IllegalArgumentException.class, () -> Promise.gap("  "));
     }

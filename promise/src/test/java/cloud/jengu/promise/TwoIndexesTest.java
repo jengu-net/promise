@@ -80,6 +80,7 @@ class TwoIndexesTest {
     @Test
     @DisplayName("a main compilation and a test compilation write their citations under names of "
             + "their own, so one output carries both and neither overwrites the other")
+    @ProvingToolset(ToolsetPromises.TESTS_CITATIONS_TRAVEL_APART)
     void eachCompilationWritesItsOwnIndex() throws Exception {
         Path jar = Files.createTempDirectory("promise-jar");
         compile(jar, null, product("one", "REQ-ONE"), List.of(production("one")));
@@ -97,6 +98,7 @@ class TwoIndexesTest {
     @Test
     @DisplayName("the reading tells a test's citation from production code's: a promise only "
             + "production code cites is enforced and not proven, one a test cites is proven")
+    @ProvingToolset({ToolsetPromises.ONLY_A_TEST_PROVES, ToolsetPromises.STATUS_IS_DERIVED})
     void theReadingTellsTheTwoApart() throws Exception {
         Path jar = Files.createTempDirectory("promise-jar");
         compile(jar, null, product("one", "REQ-ONE"), List.of(production("one")));
@@ -124,6 +126,7 @@ class TwoIndexesTest {
     @Test
     @DisplayName("on a classpath holding two products, each from its own jar, the tested "
             + "citations of both are answered")
+    @ProvingToolset(ToolsetPromises.TESTS_CITATIONS_TRAVEL_APART)
     void twoProductsAreReadFromOneClasspath() throws Exception {
         Path first = Files.createTempDirectory("promise-first");
         compile(first, null, product("one", "REQ-ONE"), List.of(production("one")));
@@ -144,6 +147,7 @@ class TwoIndexesTest {
     @Test
     @DisplayName("a tested index naming a constant the classpath does not carry fails the load, "
             + "as the production index does")
+    @ProvingToolset(ToolsetPromises.PROOFS_INDEXED_AT_COMPILE_TIME)
     void aStaleTestedIndexFailsTheLoad() throws Exception {
         Path jar = Files.createTempDirectory("promise-jar");
         compile(jar, null, product("one", "REQ-ONE"), List.of());
@@ -160,6 +164,7 @@ class TwoIndexesTest {
 
     @Test
     @DisplayName("an index option the processor does not know is a compile error naming it")
+    @ProvingToolset(ToolsetPromises.TESTS_CITATIONS_TRAVEL_APART)
     void anUnknownIndexIsRefused() throws Exception {
         Path out = Files.createTempDirectory("promise-jar");
         List<Diagnostic<? extends JavaFileObject>> said =
@@ -184,7 +189,7 @@ class TwoIndexesTest {
         for (int i = 0; i < roots.length; i++) {
             urls[i] = roots[i].toUri().toURL();
         }
-        return new URLClassLoader(urls, TwoIndexesTest.class.getClassLoader());
+        return new Isolated(urls);
     }
 
     static void compile(Path out, String index, List<JavaFileObject> product,

@@ -16,12 +16,12 @@ import java.util.Map;
  * The composition seam: catalogues in, one graph out.
  *
  * <p>{@link #load(ClassLoader)} walks every {@link #INDEX} resource the
- * loader can see — dbo alone during dbo development, every product's jar at
- * the end of the day — and {@link #of(Class[])} stays for tools and tests
+ * loader can see — one product alone while it is developed, every product's
+ * jar once they are composed — and {@link #of(Class[])} stays for tools and tests
  * that want to be explicit. Either way a catalogue is read WHOLE via
  * {@code getEnumConstants()}: proven, planned and gap constants alike, never
  * a side effect of what happened to be class-loaded
- * (REQ-DBO-PRM-CATALOGUE-READ-WHOLE).
+ * (REQ-PROMISE-CATALOGUE-READ-WHOLE).
  */
 public final class Registry {
 
@@ -135,7 +135,7 @@ public final class Registry {
      * The composed graph: every promise, classification and area of every
      * registered catalogue, areas merged by code, the classification →
      * promise links inverted once so a promise's classifications are derived,
-     * never declared (REQ-DBO-PRM-DOWN-LINKS-ONLY).
+     * never declared (REQ-PROMISE-DOWN-LINKS-ONLY).
      */
     public static final class Model {
 
@@ -195,7 +195,7 @@ public final class Registry {
         }
 
         /**
-         * Derived, never asserted (REQ-DBO-PRM-STATUS-IS-DERIVED): cited is
+         * Derived, never asserted (REQ-PROMISE-STATUS-IS-DERIVED): cited is
          * proven — the report is only ever generated from a green build, the
          * same trust the close-after-CI gate encodes — named-uncited is
          * planned, an assurance note on the constant is review-based, and a
@@ -231,7 +231,7 @@ public final class Registry {
         }
 
         /**
-         * The fold (REQ-DBO-PRM-COVERAGE-IS-A-FOLD): the statuses of the
+         * The fold (REQ-PROMISE-COVERAGE-IS-A-FOLD): the statuses of the
          * promises a classification declares, gaps included.
          */
         public Map<PromiseStatus, Long> coverage(Classified classified) {

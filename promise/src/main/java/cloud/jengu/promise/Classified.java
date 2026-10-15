@@ -5,7 +5,7 @@ import java.util.List;
 /**
  * One classification: a view over the promises that fulfil it.
  *
- * <p>Links run DOWN only (REQ-DBO-PRM-DOWN-LINKS-ONLY): a classification
+ * <p>Links run DOWN only (REQ-PROMISE-DOWN-LINKS-ONLY): a classification
  * declares its promises, a promise never names its classifications, and the
  * inverse is derived by {@link Registry.Model}. One direction, one truth,
  * nothing to drift.

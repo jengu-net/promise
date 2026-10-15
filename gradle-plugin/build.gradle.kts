@@ -50,8 +50,20 @@ sourceSets.main {
 dependencies {
     // To read back what a fixture's jars carry, as a product composing them would.
     testImplementation(project(":promise"))
+    // The plugin's tests cite the toolset's promise about it, indexed as tests'
+    // and carried in this jar, as the plugin itself would arrange.
+    testAnnotationProcessor(project(":promise"))
     testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+
+tasks.compileTestJava {
+    options.compilerArgs.add("-Apromise.index=tested")
+}
+tasks.jar {
+    from(tasks.compileTestJava.flatMap { it.destinationDirectory }) {
+        include("META-INF/promise/proofs-tested")
+    }
 }
 
 tasks.test {

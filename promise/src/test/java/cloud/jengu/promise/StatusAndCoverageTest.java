@@ -20,6 +20,7 @@ class StatusAndCoverageTest {
 
     @Test
     @DisplayName("status is derived: cited proven, uncited planned, assured declared, gap a gap")
+    @ProvingToolset(ToolsetPromises.STATUS_IS_DERIVED)
     void statusIsDerived() {
         Registry.Model model = model();
         assertEquals(PromiseStatus.PROVEN, model.statusOf(TestPromises.PLAIN_PROMISE));
@@ -33,6 +34,7 @@ class StatusAndCoverageTest {
 
     @Test
     @DisplayName("coverage is a fold over the declared promises, gaps included")
+    @ProvingToolset({ToolsetPromises.COVERAGE_IS_A_FOLD, ToolsetPromises.GAP_IS_FIRST_CLASS})
     void coverageIsAFold() {
         Map<PromiseStatus, Long> coverage = model().coverage(TestFeatures.COVERED_GROUND);
         assertEquals(1L, coverage.get(PromiseStatus.PROVEN));
