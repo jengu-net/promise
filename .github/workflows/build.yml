@@ -1,0 +1,80 @@
+name: build
+
+# One workflow, two modes:
+#
+#   main push / PR   build and test → (push only) snapshot jars
+#   release tag v*   build and test → RELEASE jars, numbered by the tag
+#
+# Nothing publishes unless the build is green on exactly that commit.
+#
+# Jars go to the project's own public repository, named by the repository
+# variable ARTIFACT_HOST (the host serving the Maven tree at /repository/).
+# Unset, the publish is skipped rather than failed: a destination that does
+# not exist is a known state, and a red X nobody can act on teaches people to
+# ignore red Xs. Maven Central is a later destination for the same
+# coordinates.
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    outputs:
+      gradle_args: ${{ steps.version.outputs.gradle_args }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "25"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Number a release by its tag
+        id: version
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "gradle_args=-Ppromise.version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "gradle_args=" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Build and test
+        run: ./gradlew build --no-daemon ${{ steps.version.outputs.gradle_args }}
+
+  publish:
+    needs: build
+    # Never on pull_request, and never without a repository to publish to.
+    if: github.event_name != 'pull_request' && vars.ARTIFACT_HOST != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # The credentials it publishes with are secrets, not the workflow token.
+    permissions:
+      contents: read
+    env:
+      REPO_HOST: ${{ vars.ARTIFACT_HOST }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "25"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Publish
+        env:
+          NEXUS_USERNAME: ${{ secrets.NEXUS_USERNAME }}
+          NEXUS_PASSWORD: ${{ secrets.NEXUS_PASSWORD }}
+          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+          SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
+        run: >-
+          ./gradlew --no-daemon ${{ needs.build.outputs.gradle_args }}
+          publishAllPublicationsToJenguRepoRepository
