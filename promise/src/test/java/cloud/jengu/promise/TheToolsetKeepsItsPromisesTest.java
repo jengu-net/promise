@@ -52,13 +52,15 @@ class TheToolsetKeepsItsPromisesTest {
     }
 
     @Test
-    @DisplayName("every promise the toolset makes is proven by a test citing it, and the one "
-            + "its plugin's own tests prove says so where they cannot be read")
+    @DisplayName("every promise the toolset makes is proven by a test citing it, and the ones "
+            + "its plugin's own tests prove say so where they cannot be read")
     void everyPromiseIsProven() {
         Registry.Model model = model();
         List<String> unproven = new ArrayList<>();
         for (ToolsetPromises promise : ToolsetPromises.values()) {
-            PromiseStatus expected = promise == ToolsetPromises.APPLYING_THE_PLUGIN_IS_ALL_A_MODULE_DOES
+            // Proven in the plugin's module, whose citations this classpath does
+            // not hold: assured, by a note naming the test, and only then.
+            PromiseStatus expected = promise.assurance() != null
                     ? PromiseStatus.ASSURED : PromiseStatus.PROVEN;
             if (model.statusOf(promise) != expected) {
                 unproven.add(promise.code() + " reads " + model.statusOf(promise));

@@ -18,6 +18,17 @@ public interface Classified extends Coded {
     /** The classification, as one business-readable title. */
     String title();
 
+    /**
+     * What the classification is about, in a few sentences a reader new to it
+     * can follow — or null, when the title says it all.
+     *
+     * <p>Beside the title rather than in it: a title is read in lists and
+     * tabs, and a description is read once somebody has opened the group.
+     */
+    default String description() {
+        return null;
+    }
+
     /** The promises fulfilling this classification — named constants and gaps. */
     List<Promise> promises();
 }

@@ -18,6 +18,11 @@ public interface Area extends Coded {
     /** The concern, as one business-readable title. */
     String title();
 
+    /** What the concern is about, in a few sentences — or null, when the title says it all. */
+    default String description() {
+        return null;
+    }
+
     /** The classifications this area groups. */
     List<Classified> covers();
 }

@@ -80,6 +80,24 @@ public enum ToolsetPromises implements Promise {
             + "by where it came from, read whole or not at all, and every other "
             + "product's evidence is still answered."),
 
+    THE_LEDGER_IS_ONE_PAGE(
+            "The ledger is one self-contained HTML page drawn from the composed model and, "
+            + "given a run, its evidence: every kind of group as a tab, each group with its "
+            + "description, its promises and how many are kept and passing, and nothing a "
+            + "catalogue holds written into the page as markup."),
+
+    THE_PLUGIN_DRAWS_THE_LEDGER(
+            "A module applying the Gradle plugin draws its ledger and a markdown summary "
+            + "from its jar, its runtime classpath and its tests' results; in a GitHub "
+            + "Actions job the summary is added to the job's own summary.") {
+        @Override
+        public String assurance() {
+            return "Proven by APluginPacksAModulesCitationsTest in the plugin's own module, "
+                    + "whose jar carries those citations; a classpath holding the framework "
+                    + "without the plugin reads this note instead.";
+        }
+    },
+
     APPLYING_THE_PLUGIN_IS_ALL_A_MODULE_DOES(
             "A module applying the Gradle plugin has its catalogues indexed, its "
             + "production code's and its tests' citations indexed apart, and its tests' "
