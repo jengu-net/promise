@@ -189,9 +189,23 @@ public final class Registry {
             return promise.assurance() != null ? PromiseStatus.ASSURED : PromiseStatus.PLANNED;
         }
 
-        /** The sites proving {@code promise}; empty is the answer "nobody". */
+        /** The tests proving {@code promise}; empty is the answer "nobody". */
         public java.util.Set<String> citing(Promise promise) {
             return proofs.citing(promise);
+        }
+
+        /**
+         * The production code enforcing {@code promise}. Never a proof: code
+         * that refuses what a promise forbids says where it is kept, and only
+         * a test says that it holds.
+         */
+        public java.util.Set<String> enforcing(Promise promise) {
+            return proofs.enforcing(promise);
+        }
+
+        /** Every citation of {@code promise}, each saying whether it proves or enforces. */
+        public List<Proofs.Citation> citations(Promise promise) {
+            return proofs.citations(promise);
         }
 
         /**

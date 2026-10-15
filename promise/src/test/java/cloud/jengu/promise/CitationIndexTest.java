@@ -66,7 +66,7 @@ class CitationIndexTest {
     @DisplayName("compiling a citing test writes the proofs index; the decoy is ignored")
     void citationsAreIndexedAtCompileTime() throws Exception {
         Path out = compiled();
-        List<String> lines = Files.readAllLines(out.resolve(Proofs.INDEX));
+        List<String> lines = Files.readAllLines(out.resolve(Proofs.TESTED_INDEX));
         assertEquals(List.of("fixture.SomeTest#provesTwoThings="
                 + "fixture.FixturePromises:PLAIN_PROMISE,BODIED_PROMISE"), lines,
                 "the meta-annotation alone decides what counts as a citation");
@@ -103,7 +103,7 @@ class CitationIndexTest {
                     source("fixture.Decoy", DECOY),
                     source("fixture.SomeTest", SITE));
             JavaCompiler.CompilationTask task = compiler.getTask(null, files, diagnostics,
-                    List.of("-d", out.toString(),
+                    List.of("-d", out.toString(), "-Apromise.index=tested",
                             "-cp", System.getProperty("java.class.path")),
                     null, units);
             task.setProcessors(List.of(new CatalogueProcessor()));
