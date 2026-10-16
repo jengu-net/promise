@@ -108,6 +108,87 @@ public class PromisePlugin implements Plugin<Project> {
                 project.getConfigurations().getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME));
         report(project, extension, classpath,
                 List.of(project.getLayout().getBuildDirectory().dir("test-results").get().getAsFile()));
+        packResults(project, extension, jar);
+    }
+
+    /** The task a release asks for, to carry its run's results in what it ships. */
+    public static final String PACK_TASK = "promisePackResults";
+
+    /**
+     * Packs the run's results into the jar the product ships, when asked.
+     *
+     * <p>Never part of the normal build, and never a reason for a jar to wait
+     * for its tests: a jar is an input to tests, and one that waited on them
+     * would put a cycle under every build whose tests run on jars. So the
+     * results are written into the finished jar after the tests, in place, by
+     * a task that runs only when a release asks for it — and publishing, when
+     * asked for beside it, waits for it.
+     */
+    private void packResults(Project project, PromiseExtension extension, TaskProvider<Jar> jar) {
+        extension.getResultsInto().convention(jar.flatMap(Jar::getArchiveFile));
+        extension.getRun().convention(project.provider(() -> runOf(project)));
+        File packed = project.getLayout().getBuildDirectory()
+                .file("promise/" + RESULTS_NAME).get().getAsFile();
+        TaskProvider<JavaExec> pack = project.getTasks().register(PACK_TASK, JavaExec.class, task -> {
+            task.setGroup("publishing");
+            task.setDescription("Packs the last test run's results into the jar this module "
+                    + "ships, so a deployment reads its promises' standing as this build did.");
+            task.getMainClass().set("cloud.jengu.promise.PackedResults");
+            task.setClasspath(project.getConfigurations()
+                    .getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME));
+            task.getOutputs().upToDateWhen(t -> false);
+            task.mustRunAfter(project.getTasks().withType(Test.class));
+            task.mustRunAfter(jar);
+            task.getArgumentProviders().add(() -> {
+                List<String> args = new ArrayList<>(List.of("--out", packed.getPath(),
+                        "--run", extension.getRun().get()));
+                java.util.Set<File> roots = extension.getResults().getFiles();
+                if (roots.isEmpty()) {
+                    roots = java.util.Set.of(project.getLayout().getBuildDirectory()
+                            .dir("test-results").get().getAsFile());
+                }
+                for (File root : roots) {
+                    args.add("--results");
+                    args.add(root.getPath());
+                }
+                return args;
+            });
+            task.doLast(t -> into(extension.getResultsInto().get().getAsFile(), packed));
+        });
+        project.getTasks().withType(
+                org.gradle.api.publish.maven.tasks.AbstractPublishToMaven.class)
+                .configureEach(publish -> publish.mustRunAfter(pack));
+    }
+
+    /** The document's name inside a jar, where the framework reads it. */
+    static final String RESULTS_NAME = "results.xml";
+    static final String RESULTS = "META-INF/promise/" + RESULTS_NAME;
+
+    /** Writes the packed results into the jar, replacing any a previous release left there. */
+    static void into(File jar, File packed) {
+        if (!jar.isFile()) {
+            throw new IllegalStateException("there is no " + jar + " to pack the results into: "
+                    + "build it first, or name the jar the product ships with promise.resultsInto");
+        }
+        try (java.nio.file.FileSystem zip = java.nio.file.FileSystems.newFileSystem(jar.toPath())) {
+            java.nio.file.Path target = zip.getPath(RESULTS);
+            Files.createDirectories(target.getParent());
+            Files.copy(packed.toPath(), target, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException e) {
+            throw new UncheckedIOException("could not pack the results into " + jar, e);
+        }
+    }
+
+    /** The version, with the CI run and commit that built it where there is one. */
+    static String runOf(Project project) {
+        String run = project.getName() + " " + project.getVersion();
+        String id = System.getenv("GITHUB_RUN_ID");
+        if (id != null && !id.isBlank()) {
+            String sha = System.getenv("GITHUB_SHA");
+            return run + " · GitHub run " + id
+                    + (sha != null && sha.length() >= 7 ? " (" + sha.substring(0, 7) + ")" : "");
+        }
+        return run + " · built " + java.time.Instant.now().truncatedTo(java.time.temporal.ChronoUnit.SECONDS);
     }
 
     /** One ledger over every subproject applying the plugin. */

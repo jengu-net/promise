@@ -45,6 +45,8 @@ class APluginPacksAModulesCitationsTest {
     private BuildResult reported;
     /** What the job's summary page would have been given. */
     private Path stepSummary;
+    /** The third build: a release asking for its run's results to travel. */
+    private BuildResult packed;
 
     @BeforeAll
     void aProductsBuild() throws IOException {
@@ -75,6 +77,16 @@ class APluginPacksAModulesCitationsTest {
                     """);
             sources(product);
         }
+        // one is released: a version, and a repository it is published to.
+        write("one/build.gradle.kts", Files.readString(build.resolve("one/build.gradle.kts"))
+                .replace("    java\n", "    java\n    `maven-publish`\n") + """
+                version = "1.0"
+                group = "ex"
+                publishing {
+                    publications { create<MavenPublication>("release") { from(components["java"]) } }
+                    repositories { maven { name = "local"; url = uri(layout.buildDirectory.dir("repo")) } }
+                }
+                """);
         // The same sources, and no plugin: the framework named by hand, as
         // before, and nothing else.
         write("plain/build.gradle.kts", """
@@ -111,6 +123,20 @@ class APluginPacksAModulesCitationsTest {
                 .withPluginClasspath()
                 .withEnvironment(environment)
                 .withArguments("promiseReport", "--stacktrace")
+                .forwardOutput()
+                .build();
+
+        // A release of one, built by a CI run, asking for its results to travel.
+        java.util.Map<String, String> release = new java.util.HashMap<>(System.getenv());
+        release.put("GITHUB_RUN_ID", "777");
+        release.put("GITHUB_SHA", "abcdef1234567");
+        packed = GradleRunner.create()
+                .withProjectDir(build.toFile())
+                .withPluginClasspath()
+                .withEnvironment(release)
+                // Publishing asked for first: it must wait for the results anyway.
+                .withArguments(":one:publishAllPublicationsToLocalRepository",
+                        ":one:promisePackResults", "--stacktrace")
                 .forwardOutput()
                 .build();
     }
@@ -256,6 +282,49 @@ class APluginPacksAModulesCitationsTest {
         assertTrue(summary.contains("## one: 50% kept"), summary);
         assertTrue(summary.contains("## The products: 50% kept"), summary);
         assertTrue(summary.contains("last run: 1 passing"), summary);
+    }
+
+    @Test
+    @DisplayName("asked for, a release packs its run's results into the jar it ships, named for "
+            + "the run, and a classpath of that jar alone reads each promise's standing as the "
+            + "build did")
+    @ProvingToolset(ToolsetPromises.A_RELEASE_PACKS_ITS_RESULTS)
+    void aReleasePacksItsRun() throws Exception {
+        try (JarFile jar = new JarFile(jarOf("one").toFile())) {
+            String results = read(jar, "META-INF/promise/results.xml");
+            assertTrue(results.contains("<testsuites name=\"one 1.0 · GitHub run 777 (abcdef1)\">"),
+                    results);
+            assertTrue(results.contains("<testsuite name=\"one.GuardTest\" tests=\"1\""), results);
+        }
+        try (URLClassLoader deployed = new URLClassLoader(new URL[] {jarOf("one").toUri().toURL()},
+                getClass().getClassLoader())) {
+            cloud.jengu.promise.Evidence evidence =
+                    cloud.jengu.promise.Evidence.read(deployed, List.of());
+            assertEquals(cloud.jengu.promise.Evidence.Standing.PASSING,
+                    evidence.standing(constant(deployed, "one.Promises", "KEPT")),
+                    "the jar's packed results did not answer as the build's did");
+            assertTrue(evidence.runs().stream().anyMatch(run -> run.contains("GitHub run 777")),
+                    evidence.runs().toString());
+        }
+        try (JarFile published = new JarFile(build.resolve("one/build/repo/ex/one/1.0/one-1.0.jar")
+                .toFile())) {
+            assertNotNull(published.getEntry("META-INF/promise/results.xml"),
+                    "the release was published before its results were packed into it");
+        }
+    }
+
+    @Test
+    @DisplayName("a build that does not ask is unchanged: nothing packed, and the jar waited "
+            + "for no test")
+    @ProvingToolset(ToolsetPromises.A_RELEASE_PACKS_ITS_RESULTS)
+    void aBuildThatDoesNotAskIsUnchanged() throws IOException {
+        assertNull(result.task(":one:promisePackResults"), "an ordinary build packed results");
+        assertNull(reported.task(":one:promisePackResults"), "drawing the ledger packed results");
+        assertNull(packed.task(":one:test"), "packing ran the tests rather than taking their run");
+        try (JarFile jar = new JarFile(jarOf("two").toFile())) {
+            assertNull(jar.getEntry("META-INF/promise/results.xml"),
+                    "a module nobody asked to pack carries results");
+        }
     }
 
     private Path jarOf(String product) throws IOException {

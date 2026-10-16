@@ -332,7 +332,8 @@ public final class HtmlReport {
                         .append(",\"skipped\":").append(result.skipped()).append('}');
                 first = false;
             }
-            out.append("},\"unreadable\":[");
+            out.append("},\"runs\":").append(list(evidence.runs()));
+            out.append(",\"unreadable\":[");
             first = true;
             for (Evidence.Unreadable unreadable : evidence.unreadable()) {
                 out.append(first ? "" : ",").append("{\"source\":").append(q(unreadable.source()))

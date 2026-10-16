@@ -139,3 +139,45 @@ tasks.register<JavaExec>("promiseReport") {
         }
     }
 }
+
+// ── the toolset's own run, packed into what it ships ─────────────────────
+// What promisePackResults does for a product, done by hand here, for the same
+// reason as the ledger above. Both modules' results go into the framework's
+// jar, the one every product composing the toolset holds: a product resting
+// on the toolset's promises then reads them as this release's run left them.
+tasks.register<JavaExec>("promisePackResults") {
+    group = "publishing"
+    description = "Packs this run's results into the framework's jar, for a release to ship."
+    val framework = project(":promise").tasks.named<Jar>("jar")
+    val packed = layout.buildDirectory.file("promise/results.xml").get().asFile
+    classpath = files(framework)
+    mainClass.set("cloud.jengu.promise.PackedResults")
+    val sha = System.getenv("GITHUB_SHA")?.take(7)
+    val run = "promise ${project(":promise").version}" + (System.getenv("GITHUB_RUN_ID")
+        ?.let { " · GitHub run $it" + (sha?.let { s -> " ($s)" } ?: "") } ?: "")
+    args("--out", packed.path, "--run", run,
+        "--results", project(":promise").layout.buildDirectory.dir("test-results").get().asFile.path,
+        "--results", project(":gradle-plugin").layout.buildDirectory.dir("test-results").get().asFile.path)
+    outputs.upToDateWhen { false }
+    subprojects.forEach { sub -> mustRunAfter(sub.tasks.withType<Test>()) }
+    mustRunAfter(framework)
+    doLast {
+        val jar = framework.get().archiveFile.get().asFile.toPath()
+        java.nio.file.FileSystems.newFileSystem(jar).use { zip ->
+            val target = zip.getPath("META-INF/promise/results.xml")
+            java.nio.file.Files.createDirectories(target.parent)
+            java.nio.file.Files.copy(packed.toPath(), target,
+                java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+        }
+    }
+}
+// What is released waits for the run's results; what the plugin's own tests
+// publish to the build's functional repository is not a release, and waits
+// for nothing — it is what those tests run on.
+subprojects {
+    tasks.withType<PublishToMavenRepository>().configureEach {
+        if (name.endsWith("ToJenguRepoRepository")) {
+            mustRunAfter(rootProject.tasks.named("promisePackResults"))
+        }
+    }
+}

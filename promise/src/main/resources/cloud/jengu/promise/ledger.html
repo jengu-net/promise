@@ -549,6 +549,7 @@ public enum Shop${k.name} implements ${k.type} {
   const foot = document.getElementById('foot');
   foot.append(el('span', { text: `Generated ${new Date(model.generated).toLocaleString()}` }),
     el('span', { text: `${model.groups.length} groups · ${model.areas.length} areas · ${all.length} promises` }),
+    ...((model.runs || []).length ? [el('span', { text: `Results packed by ${model.runs.join(', ')}` })] : []),
     el('span', { text: 'Kept = proven by a citing test, assured by a recorded reason, or kept by its basis.' }));
 
   show((location.hash || '').slice(1) || (KINDS.find(k => groupsByKind(k.kind).length) || KINDS[0]).id);
