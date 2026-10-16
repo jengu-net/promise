@@ -412,6 +412,37 @@ The same page is available in code: `HtmlReport.render(evidence, title)`, or
 `HtmlReport.render(model, title)` without a run. A group or an area can carry a
 `description()` beside its title, and both reports show it.
 
+### Results that travel with a release
+
+A promise's standing has two halves: which tests cite it, which every jar
+carries, and what those tests did, which otherwise lives only in the build
+that ran them. A deployed product would read every promise as *no result*,
+however green its release was. A release can carry its run with it:
+
+```sh
+./gradlew build promisePackResults publish
+```
+
+`promisePackResults` writes the run's results into the jar the module
+ships, as one JUnit document, `META-INF/promise/results.xml`. `Evidence`
+reads every such document on a classpath, so a deployment, and every product
+composing it, reads each promise's standing as the release build did.
+
+- **Faithful:** it keeps every test class's outcome as the run left it,
+  failures and skips included, and a class that held no tests. It keeps
+  nothing else: no failure messages, no traces, nothing a test printed, since
+  those can carry what a release must not. A class the run did not report is
+  absent.
+- **Named:** the document names its run, by default the module's version and
+  the GitHub run and commit that built it. `Evidence.runs()` answers it, and
+  the ledger shows it.
+- **Asked for, never part of the normal build:** the task runs after the
+  tests and writes into the finished jar. No jar ever waits for its tests,
+  and publishing, when asked for beside it, waits for the results.
+- **Configurable:** `promise { resultsInto.set(...) }` names another jar,
+  such as the assembly a product deploys. `results.from(...)` names where the
+  run's reports are, and `run.set(...)` names the run.
+
 ## The toolset's own promises
 
 The toolset keeps its promises the way it asks a product to keep its own.

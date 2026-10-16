@@ -76,12 +76,14 @@ public final class Evidence {
     private final Registry.Model model;
     private final Map<String, Result> results;
     private final List<Unreadable> unreadable;
+    private final List<String> runs;
 
     private Evidence(Registry.Model model, Map<String, Result> results,
-            List<Unreadable> unreadable) {
+            List<Unreadable> unreadable, List<String> runs) {
         this.model = model;
         this.results = results;
         this.unreadable = List.copyOf(unreadable);
+        this.runs = List.copyOf(runs);
     }
 
     /**
@@ -158,12 +160,16 @@ public final class Evidence {
                 }
             }
         }
+        List<String> runs = new ArrayList<>();
         try {
             java.util.Enumeration<URL> packed = loader.getResources(RESULTS);
             while (packed.hasMoreElements()) {
                 URL one = packed.nextElement();
                 try (InputStream in = one.openStream()) {
-                    take(in, results);
+                    String run = take(in, results);
+                    if (run != null && !run.isEmpty() && !runs.contains(run)) {
+                        runs.add(run);
+                    }
                 } catch (Exception e) {
                     unreadable.add(new Unreadable(one.toString(), reason(e)));
                 }
@@ -172,7 +178,7 @@ public final class Evidence {
             unreadable.add(new Unreadable(RESULTS, e.getMessage()));
         }
 
-        return new Evidence(Registry.over(catalogues).model(proofs), results, unreadable);
+        return new Evidence(Registry.over(catalogues).model(proofs), results, unreadable, runs);
     }
 
     /** Every promise a catalogue declares, its bases checked; throws as the strict load does. */
@@ -209,6 +215,15 @@ public final class Evidence {
     /** What each test class came to, by its binary name. */
     public Map<String, Result> results() {
         return Map.copyOf(results);
+    }
+
+    /**
+     * Which runs the results packed on the classpath came from, as each names
+     * itself ({@link PackedResults}): a deployed product reads its standing
+     * from its release build, and says which.
+     */
+    public List<String> runs() {
+        return runs;
     }
 
     /** What could not be read. Empty is the only answer a gate passes on. */
@@ -264,7 +279,7 @@ public final class Evidence {
      * holding several — tallied by each test case's class. A suite with no
      * cases still names its class, with nothing run.
      */
-    private static void take(InputStream in, Map<String, Result> results) throws Exception {
+    private static String take(InputStream in, Map<String, Result> results) throws Exception {
         Document document = parser().parse(in);
         Element root = document.getDocumentElement();
         if (!root.getTagName().equals("testsuite") && !root.getTagName().equals("testsuites")) {
@@ -297,6 +312,7 @@ public final class Evidence {
                         has(testCase, "skipped")), Result::plus);
             }
         }
+        return root.getTagName().equals("testsuites") ? root.getAttribute("name") : null;
     }
 
     private static int has(Element testCase, String child) {

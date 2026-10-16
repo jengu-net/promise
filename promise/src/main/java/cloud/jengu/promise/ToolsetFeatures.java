@@ -41,6 +41,7 @@ public enum ToolsetFeatures implements Feature {
             ToolsetPromises.COVERAGE_IS_A_FOLD,
             ToolsetPromises.STANDING_IS_READ_FROM_THE_RUN,
             ToolsetPromises.STANDING_FOLLOWS_THE_BASIS,
+            ToolsetPromises.A_RUN_IS_PACKED_FAITHFULLY,
             ToolsetPromises.ONE_PRODUCTS_UNREADABLE_EVIDENCE_IS_ITS_OWN,
             ToolsetPromises.THE_LEDGER_IS_ONE_PAGE,
             ToolsetPromises.THE_BADGE_SAYS_WHAT_THE_LEDGER_SAYS)),
@@ -51,7 +52,8 @@ public enum ToolsetFeatures implements Feature {
             + "of what the module promises and what its last run proved.",
             List.of(
             ToolsetPromises.APPLYING_THE_PLUGIN_IS_ALL_A_MODULE_DOES,
-            ToolsetPromises.THE_PLUGIN_DRAWS_THE_LEDGER));
+            ToolsetPromises.THE_PLUGIN_DRAWS_THE_LEDGER,
+            ToolsetPromises.A_RELEASE_PACKS_ITS_RESULTS));
 
     private final String title;
     private final String description;

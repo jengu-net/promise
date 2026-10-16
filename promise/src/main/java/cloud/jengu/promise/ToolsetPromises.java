@@ -88,6 +88,14 @@ public enum ToolsetPromises implements Promise {
             + "failing when one failed or erred; no result when one never ran, held no "
             + "tests or skipped one; uncited when no test cites it."),
 
+    A_RUN_IS_PACKED_FAITHFULLY(
+            "A run's results pack into one JUnit document that travels with a release: "
+            + "every test class's outcome as the run left it, failures and skips included, "
+            + "and nothing else — no message, no trace, nothing a test printed, no class the "
+            + "run did not report — named for the run it came from; packed into jars, they "
+            + "answer each promise's standing as the build would have, every product's "
+            + "together."),
+
     ONE_PRODUCTS_UNREADABLE_EVIDENCE_IS_ITS_OWN(
             "Reading the evidence, an index or a report that cannot be read is reported "
             + "by where it came from, read whole or not at all, and every other "
@@ -108,6 +116,18 @@ public enum ToolsetPromises implements Promise {
             "A module applying the Gradle plugin draws its ledger and a markdown summary "
             + "from its jar, its runtime classpath and its tests' results; in a GitHub "
             + "Actions job the summary is added to the job's own summary.") {
+        @Override
+        public String assurance() {
+            return "Proven by APluginPacksAModulesCitationsTest in the plugin's own module, "
+                    + "whose jar carries those citations; a classpath holding the framework "
+                    + "without the plugin reads this note instead.";
+        }
+    },
+
+    A_RELEASE_PACKS_ITS_RESULTS(
+            "Asked for, the Gradle plugin packs a build's test results into the jar a "
+            + "product names, after its tests, and before it is published; a build that "
+            + "does not ask is unchanged, and no jar waits for its tests.") {
         @Override
         public String assurance() {
             return "Proven by APluginPacksAModulesCitationsTest in the plugin's own module, "
