@@ -1,0 +1,558 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="generator" content="cloud.jengu.promise">
+<title>promise</title>
+<style>
+/* Layout: a ledger. Summary band on top, one tab per kind of grouping, each
+   group a row that opens onto its promises. Colours carry state: green is
+   kept, amber is promised and not yet proven, dashed is unknown ground. */
+:root {
+  --paper: #fbfaf8;
+  --panel: #ffffff;
+  --ink: #111a24;
+  --body: #2c3a47;
+  --muted: #5d6c7b;
+  --faint: #8695a3;
+  --line: #e3e0da;
+  --line-soft: #eeebe6;
+  --accent: #a8641b;
+  --accent-soft: #f6efe4;
+  --kept: #14532d;
+  --kept-soft: #e7f0e9;
+  --assured: #5f8f6e;
+  --planned: #d9a35b;
+  --gap: #b4433a;
+  --gap-soft: #f7e6e3;
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0e1319; --panel: #161d25; --ink: #f2f0ec; --body: #cfd6dd; --muted: #98a6b3;
+    --faint: #6f7d8a; --line: #26313c; --line-soft: #1d262f; --accent: #e0a45c;
+    --accent-soft: #2a2117; --kept: #7fc79a; --kept-soft: #15261c; --assured: #4f7f5f;
+    --planned: #b98a4a; --gap: #e0796f; --gap-soft: #2c1816; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0e1319; --panel: #161d25; --ink: #f2f0ec; --body: #cfd6dd; --muted: #98a6b3;
+  --faint: #6f7d8a; --line: #26313c; --line-soft: #1d262f; --accent: #e0a45c;
+  --accent-soft: #2a2117; --kept: #7fc79a; --kept-soft: #15261c; --assured: #4f7f5f;
+  --planned: #b98a4a; --gap: #e0796f; --gap-soft: #2c1816; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+[hidden] { display: none !important; }
+body {
+  margin: 0; background: var(--paper); color: var(--body); font: 15px/1.55 var(--font);
+  padding: env(safe-area-inset-top, 0px) 16px calc(64px + env(safe-area-inset-bottom, 0px)); font-variant-numeric: tabular-nums;
+}
+.wrap { max-width: 1080px; margin: 0 auto; }
+h1, h2, h3 { color: var(--ink); text-wrap: balance; margin: 0; }
+code, .code { font-family: var(--mono); font-size: 0.82em; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+
+/* ── summary ─────────────────────────────────────────── */
+.head { padding-block: 36px 20px; display: grid; gap: 18px; }
+.eyebrow { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.head h1 { font-size: clamp(26px, 4vw, 36px); line-height: 1.15; letter-spacing: -0.01em; }
+.products { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; color: var(--muted); font-size: 13px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 6px; padding: 2px 9px; border-radius: 999px;
+  border: 1px solid var(--line); background: var(--panel); font-family: var(--mono); font-size: 12px;
+  color: var(--body); white-space: nowrap;
+}
+.summary {
+  display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 2fr); gap: 28px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px 24px;
+}
+.rate { display: grid; gap: 8px; align-content: start; }
+.rate .big { font-size: 48px; font-weight: 700; color: var(--ink); line-height: 1; letter-spacing: -0.02em; }
+.rate .big small { font-size: 18px; font-weight: 600; color: var(--muted); margin-left: 4px; }
+.rate .caption { color: var(--muted); font-size: 13px; }
+.tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; background: var(--line-soft); border-radius: 8px; overflow: hidden; align-self: start; }
+.tile { background: var(--panel); padding: 10px 12px; display: grid; gap: 2px; }
+.tile b { font-size: 24px; color: var(--ink); line-height: 1.1; }
+.tile span { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+.legend-dot { width: 9px; height: 9px; border-radius: 2px; flex: none; }
+
+/* ── progress bar ────────────────────────────────────── */
+.bar { display: flex; height: 8px; border-radius: 999px; overflow: hidden; background: var(--line-soft); }
+.bar.thick { height: 12px; }
+.bar i { display: block; height: 100%; }
+.s-PROVEN { background: var(--kept); }
+.s-ASSURED { background: var(--assured); }
+.s-BASED { background: repeating-linear-gradient(135deg, var(--kept) 0 4px, var(--assured) 4px 8px); }
+.s-PLANNED { background: var(--planned); }
+.s-GAP { background: repeating-linear-gradient(135deg, var(--gap) 0 3px, transparent 3px 6px); }
+
+/* ── tabs ────────────────────────────────────────────── */
+.tabs {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--paper);
+  border-bottom: 1px solid var(--line); display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none;
+  margin-top: 8px;
+}
+.tab {
+  background: none; border: 0; border-bottom: 2px solid transparent; padding: 12px 14px 10px; cursor: pointer;
+  display: grid; gap: 5px; min-width: 112px; text-align: left; color: var(--muted);
+}
+.tab:hover { color: var(--ink); }
+.tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+.tab .name { font-weight: 600; font-size: 14px; display: flex; gap: 6px; align-items: baseline; white-space: nowrap; }
+.tab .count { font-size: 12px; color: var(--faint); font-weight: 500; }
+.tab .bar { height: 4px; width: 100%; }
+
+/* ── toolbar ─────────────────────────────────────────── */
+.toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding-block: 16px 10px; }
+.search {
+  flex: 1 1 260px; min-width: 0; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--line);
+  background: var(--panel); color: var(--ink); font: inherit;
+}
+.filters { display: flex; flex-wrap: wrap; gap: 6px; }
+.filter {
+  border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 5px 11px; cursor: pointer;
+  font-size: 13px; display: inline-flex; gap: 6px; align-items: center; color: var(--muted);
+}
+.filter[aria-pressed="true"] { border-color: var(--ink); color: var(--ink); }
+.sort { margin-left: auto; font-size: 13px; color: var(--muted); display: flex; gap: 6px; align-items: center; }
+.sort select { font: inherit; background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; }
+.tab-intro { color: var(--muted); font-size: 14px; max-width: 70ch; margin: 6px 0 4px; }
+
+/* ── groups ──────────────────────────────────────────── */
+.groups { display: grid; gap: 10px; }
+.group { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); }
+.group.flash { box-shadow: 0 0 0 2px var(--accent); }
+.group-head {
+  width: 100%; background: none; border: 0; text-align: left; cursor: pointer; padding: 16px 18px;
+  display: grid; grid-template-columns: minmax(0, 1fr) 190px; gap: 20px; align-items: center;
+}
+.group-title { display: grid; gap: 6px; min-width: 0; }
+.group-title .codeline { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.group-title h3 { font-size: 16px; font-weight: 600; line-height: 1.4; }
+.group-title p { margin: 0; color: var(--muted); font-size: 14px; max-width: 72ch; }
+.caret { color: var(--faint); transition: transform .15s; font-size: 12px; }
+.group[open] .caret { transform: rotate(90deg); }
+.group-rate { display: grid; gap: 6px; }
+.group-rate .nums { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); }
+.group-rate .nums b { color: var(--ink); font-size: 15px; }
+.done { color: var(--kept); font-weight: 600; }
+.group-body { border-top: 1px solid var(--line-soft); padding: 4px 18px 14px; }
+.group-body[hidden] { display: none; }
+
+/* ── promises ────────────────────────────────────────── */
+.promises { list-style: none; margin: 0; padding: 0; }
+.promise { display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 4px 14px; padding: 12px 0; border-bottom: 1px solid var(--line-soft); }
+.promise:last-child { border-bottom: 0; }
+.pill {
+  justify-self: start; align-self: start; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 3px 7px; border-radius: 5px; margin-top: 2px;
+}
+.p-PROVEN { background: var(--kept-soft); color: var(--kept); }
+.p-ASSURED { background: var(--kept-soft); color: var(--assured); }
+.p-BASED { background: var(--kept-soft); color: var(--kept); border: 1px dashed var(--kept); }
+.p-PLANNED { background: var(--accent-soft); color: var(--accent); }
+.p-GAP { background: var(--gap-soft); color: var(--gap); border: 1px dashed var(--gap); }
+.promise .text { color: var(--ink); max-width: 76ch; }
+.promise .text.gap { font-style: italic; color: var(--body); }
+.promise .meta { grid-column: 2; display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12.5px; color: var(--muted); align-items: center; }
+.promise .meta .code { color: var(--muted); }
+.cite-toggle { background: none; border: 0; padding: 0; color: var(--accent); cursor: pointer; font-size: 12.5px; }
+.sites { grid-column: 2; margin: 4px 0 0; padding: 8px 10px; background: var(--paper); border-radius: 6px; display: grid; gap: 3px; font-family: var(--mono); font-size: 12px; color: var(--body); overflow-x: auto; }
+.sites .kind { font-family: var(--font); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--faint); margin-top: 4px; }
+.sites .kind:first-child { margin-top: 0; }
+.sites span { white-space: nowrap; }
+.sites .cls { color: var(--muted); }
+.basis { grid-column: 2; margin: 6px 0 0; padding: 8px 0 0 12px; border-left: 2px solid var(--line); display: grid; gap: 6px; list-style: none; }
+.basis .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--faint); }
+.basis li { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 2px 10px; align-items: start; }
+.basis .pill { font-size: 10px; padding: 2px 6px; }
+.basis .ground { color: var(--body); font-size: 13.5px; }
+.basis .ground .code { display: block; color: var(--muted); font-size: 12px; }
+.note { grid-column: 2; font-size: 13px; color: var(--muted); border-left: 2px solid var(--assured); padding-left: 10px; max-width: 76ch; }
+
+/* ── areas ───────────────────────────────────────────── */
+.covers { display: grid; gap: 6px; padding-top: 8px; }
+.cover {
+  display: grid; grid-template-columns: 86px minmax(0, 1fr) 120px; gap: 12px; align-items: center; padding: 8px 10px;
+  border-radius: 8px; background: none; border: 1px solid transparent; text-align: left; cursor: pointer; width: 100%;
+}
+.cover:hover { border-color: var(--line); background: var(--paper); }
+.cover .kindtag { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--faint); }
+.cover .title { color: var(--ink); font-size: 14px; min-width: 0; }
+.cover .mini { display: grid; gap: 4px; font-size: 12px; color: var(--muted); text-align: right; }
+
+.run { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; color: var(--muted); }
+.run i { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.r-PASSING { background: var(--kept); }
+.r-FAILING { background: var(--gap); }
+.r-NO_RESULT { background: transparent; border: 1.5px solid var(--planned); }
+.r-UNCITED { background: transparent; border: 1.5px dashed var(--faint); }
+.runline { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--muted); }
+.runline b { color: var(--ink); }
+.ok { color: var(--kept); } .bad { color: var(--gap); } .none { color: var(--faint); }
+.tab.is-empty .name { color: var(--faint); font-weight: 500; }
+.declare { display: grid; gap: 10px; max-width: 70ch; margin: 0 auto; text-align: left; }
+.declare pre { margin: 0; padding: 12px 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow-x: auto; font-family: var(--mono); font-size: 12.5px; color: var(--body); line-height: 1.5; }
+.unreadable { border: 1px solid var(--gap); background: var(--gap-soft); color: var(--ink); border-radius: var(--radius); padding: 12px 16px; font-size: 13.5px; display: grid; gap: 4px; }
+.unreadable code { overflow-wrap: anywhere; }
+.empty { color: var(--muted); padding: 28px; text-align: center; border: 1px dashed var(--line); border-radius: var(--radius); }
+.foot { margin-top: 40px; color: var(--faint); font-size: 12.5px; display: flex; flex-wrap: wrap; gap: 6px 18px; }
+
+@media (max-width: 720px) {
+  .summary { grid-template-columns: minmax(0, 1fr); }
+  .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .group-head { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .promise { grid-template-columns: minmax(0, 1fr); }
+  .promise .meta, .sites, .note, .basis { grid-column: 1; }
+  .cover { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  .cover .mini { text-align: left; }
+  .sort { margin-left: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .caret { transition: none; } }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="head">
+    <div class="eyebrow" id="eyebrow">Promise ledger</div>
+    <h1 id="headline">What this build promises, and what proves it</h1>
+    <div class="products" id="products"></div>
+    <div class="unreadable" id="unreadable" hidden></div>
+    <section class="summary" aria-label="Overall">
+      <div class="rate">
+        <div class="big" id="rate"></div>
+        <div class="bar thick" id="rate-bar" role="img"></div>
+        <div class="caption" id="rate-caption"></div>
+        <div class="runline" id="runline"></div>
+      </div>
+      <div class="tiles" id="tiles"></div>
+    </section>
+  </header>
+
+  <nav class="tabs" role="tablist" id="tabs" aria-label="Kinds of grouping"></nav>
+
+  <main id="panel" role="tabpanel">
+    <p class="tab-intro" id="tab-intro"></p>
+    <div class="toolbar">
+      <input class="search" id="search" type="search" placeholder="Search promises, codes and tests" aria-label="Search">
+      <div class="filters" id="filters" role="group" aria-label="Status"></div>
+      <label class="sort">Order
+        <select id="sort">
+          <option value="catalogue">As declared</option>
+          <option value="weakest">Least proven first</option>
+          <option value="largest">Most promises first</option>
+        </select>
+      </label>
+    </div>
+    <div class="groups" id="groups"></div>
+  </main>
+
+  <footer class="foot" id="foot"></footer>
+</div>
+
+<script type="application/json" id="model">{"title":"promise","generated":"2026-10-16T17:48:12.512507125Z","promises":{"REQ-PROMISE-NAME-IS-THE-CODE":{"text":"A promise is declared exactly once, as an enum constant; its code derives from the constant's name and its catalogue's namespace, so a citation cannot drift from a declaration — there is no string to mistype and no generator to trust.","status":"PROVEN","gap":false,"catalogue":"REQ-PROMISE","standing":"PASSING","tested":["cloud.jengu.promise.CodeAndGapTest#bodiedConstantReportsTheSameCode","cloud.jengu.promise.CodeAndGapTest#nameIsTheCode"],"enforced":[]},"REQ-PROMISE-GAP-IS-FIRST-CLASS":{"text":"Unstated ground is declared as a gap with plain text; a gap registers, carries a stable code, and counts against coverage until promoted to a named promise.","status":"PROVEN","gap":false,"catalogue":"REQ-PROMISE","standing":"PASSING","tested":["cloud.jengu.promise.CodeAndGapTest#aGapNeedsItsText","cloud.jengu.promise.CodeAndGapTest#gapCodesAreStableAndDistinct","cloud.jengu.promise.ModelTest#readWhole","cloud.jengu.promise.StatusAndCoverageTest#coverageIsAFold"],"enforced":[]},"REQ-PROMISE-REGISTERED-AT-COMPILE-TIME":{"text":"An annotated catalogue is registered during its own component's compilation — no classpath is swept, and a registration regenerated on every compile cannot drift or be lost.","status":"PROVEN","gap":false,"catalogue":"REQ-PROMISE","standing":"PASSING","tested":["cloud.jengu.promise.CatalogueProcessorTest#nonEnumIsACompileError","cloud.jengu.promise.CatalogueProcessorTest#registrationIsWrittenAtCompileTime","cloud.jengu.promise.CatalogueProcessorTest#registryLoadsWhatCompilationLeftBehind"],"enforced":[]},"REQ-PROMISE-CATALOGUE-READ-WHOLE":{"text":"The registry reads a catalogue's constants whole — proven, planned and gap alike — never as a side effect of what happened to be class-loaded.","status":"PROVEN","gap":false,"catalogue":"REQ-PROMISE","standing":"PASSING","tested":["cloud.jengu.promise.CatalogueProcessorTest#registryLoadsWhatCompilationLeftBehind","cloud.jengu.promise.ModelTest#readWhole"],"enforced":[]},"REQ-PROMISE-DOWN-LINKS-ONLY":{"text":"A classification declares the promises that fulfil it; a promise never names its classifications; the inverse is derived. One direction, one truth.","status":"PROVEN","gap":false,"catalogue":"REQ-PROMISE","standing":"PASSING","tested":["cloud.jengu.promise.ModelTest#downLinksOnly"],"enforced":[]},"REQ-PROMISE-AREAS-MERGE-BY-CODE":{"text":"Composition merges same-code areas across catalogues and refuses two with conflicting prose rather than picking one.","status":"PROVEN","gap":false,"catalogue":"REQ-PROMISE","standing":"PASSING","tested":["cloud.jengu.promise.ModelTest#areasMergeByCode","cloud.jengu.promise.ModelTest#conflictingAreasRefused"],"enforced":[]},"REQ-PROMISE-A-PROMISE-NAMES-ITS-BASIS":{"text":"A promise may name the promises it is based on — its own catalogue's or a composed product's — and the model answers what it is based on and, derived, what is based on it; a basis the classpath cannot carry, or a cycle among bases, is refused at load by name, and reported as unreadable for that product alone.","status":"PROVEN","gap":false,"catalogue":"REQ-PROMISE","standing":"PASSING","tested":["cloud.jengu.promise.BasisTest#aCycleIsRefused","cloud.jengu.promise.BasisTest#aStaleBasisIsRefused","cloud.jengu.promise.BasisTest#theModelAnswersBothDirections"],"enforced":[]},"REQ-PROMISE-CITATION-IS-TYPED":{"text":"A test cites promises through its product's own enum-typed annotation, recognised by meta-annotation — a mistyped citation is a compile error, and the framework never learns a product's types.","status":"PROVEN","gap":false,"catalogue":"REQ-PROMISE","standing":"PASSING","tested":["cloud.jengu.promise.CitationIndexTest#citationsAreIndexedAtCompileTime"],"enforced":[]},"REQ-PROMISE-PROOFS-INDEXED-AT-COMPILE-TIME":{"text":"Citation sites are indexed during the product's own compilation; a renamed or deleted proof site cannot leave a stale citation behind, and an index naming a constant the classpath does not carry fails the strict load.","status":"PROVEN","gap":false,"catalogue":"REQ-PROMISE","standing":"PASSING","tested":["cloud.jengu.promise.CitationIndexTest#citationsAreIndexedAtCompileTime","cloud.jengu.promise.CitationIndexTest#proofsLoadResolvesConstants","cloud.jengu.promise.TwoIndexesTest#aStaleTestedIndexFailsTheLoad"],"enforced":[]},"REQ-PROMISE-TESTS-CITATIONS-TRAVEL-APART":{"text":"A module's tests' citations are indexed under a name of their own, so its jar carries them beside its production code's citations, neither overwriting the other, and a classpath of several products' jars answers for every one of them.","status":"PROVEN","gap":false,"catalogue":"REQ-PROMISE","standing":"PASSING","tested":["cloud.jengu.promise.TwoIndexesTest#anUnknownIndexIsRefused","cloud.jengu.promise.TwoIndexesTest#eachCompilationWritesItsOwnIndex","cloud.jengu.promise.TwoIndexesTest#twoProductsAreReadFromOneClasspath","cloud.jengu.promise.gradle.APluginPacksAModulesCitationsTest#theFrameworksJarCarriesItsOwnProof","cloud.jengu.promise.gradle.APluginPacksAModulesCitationsTest#theJarCarriesBothIndexes","cloud.jengu.promise.gradle.APluginPacksAModulesCitationsTest#twoProductsJarsAnswerForBoth"],"enforced":[]},"REQ-PROMISE-ONLY-A-TEST-PROVES":{"text":"A promise is proven only by a test citing it; production code citing a promise says where it is enforced, and proves nothing.","status":"PROVEN","gap":false,"catalogue":"REQ-PROMISE","standing":"PASSING","tested":["cloud.jengu.promise.TwoIndexesTest#theReadingTellsTheTwoApart","cloud.jengu.promise.gradle.APluginPacksAModulesCitationsTest#twoProductsJarsAnswerForBoth"],"enforced":[]},"REQ-PROMISE-STATUS-IS-DERIVED":{"text":"A promise's status is computed — cited by a test is proven, named-uncited is planned, assurance is declared on the constant, a gap is a gap — never asserted at a proof site.","status":"PROVEN","gap":false,"catalogue":"REQ-PROMISE","standing":"PASSING","tested":["cloud.jengu.promise.StatusAndCoverageTest#statusIsDerived","cloud.jengu.promise.TwoIndexesTest#theReadingTellsTheTwoApart"],"enforced":[]},"REQ-PROMISE-COVERAGE-IS-A-FOLD":{"text":"A classification's coverage is the fold of its declared promises' statuses, gaps included; an area's is the fold of its classifications.","status":"PROVEN","gap":false,"catalogue":"REQ-PROMISE","standing":"PASSING","tested":["cloud.jengu.promise.StatusAndCoverageTest#coverageIsAFold"],"enforced":[]},"REQ-PROMISE-STANDING-FOLLOWS-THE-BASIS":{"text":"A promise based on others passes only when its own citing tests, if any, passed and every promise it is based on passes; it fails when any of them fails, and has no result when any has none. Cited by no test of its own and based on kept promises, it is kept by its basis, and reads so.","status":"PROVEN","gap":false,"catalogue":"REQ-PROMISE","standing":"PASSING","tested":["cloud.jengu.promise.BasisTest#standingFollowsTheBasis"],"enforced":[]},"REQ-PROMISE-STANDING-IS-READ-FROM-THE-RUN":{"text":"Each promise's standing is read from a run's JUnit results: passing only when every test class citing it ran with no failure, error or skip; failing when one failed or erred; no result when one never ran, held no tests or skipped one; uncited when no test cites it.","status":"PROVEN","gap":false,"catalogue":"REQ-PROMISE","standing":"PASSING","tested":["cloud.jengu.promise.EvidenceTest#failingWins","cloud.jengu.promise.EvidenceTest#noResult","cloud.jengu.promise.EvidenceTest#passingAndUncited","cloud.jengu.promise.EvidenceTest#resultsFromTheClasspath"],"enforced":[]},"REQ-PROMISE-ONE-PRODUCTS-UNREADABLE-EVIDENCE-IS-ITS-OWN":{"text":"Reading the evidence, an index or a report that cannot be read is reported by where it came from, read whole or not at all, and every other product's evidence is still answered.","status":"PROVEN","gap":false,"catalogue":"REQ-PROMISE","standing":"PASSING","tested":["cloud.jengu.promise.EvidenceTest#oneProductsUnreadableIndexIsReported"],"enforced":[]},"REQ-PROMISE-THE-LEDGER-IS-ONE-PAGE":{"text":"The ledger is one self-contained HTML page drawn from the composed model and, given a run, its evidence: every kind of group as a tab, each group with its description, its promises and how many are kept and passing, and nothing a catalogue holds written into the page as markup.","status":"PROVEN","gap":false,"catalogue":"REQ-PROMISE","standing":"PASSING","tested":["cloud.jengu.promise.BasisTest#theLedgerShowsTheBasis","cloud.jengu.promise.HtmlReportTest#aCatalogueCannotWriteMarkupIntoThePage","cloud.jengu.promise.HtmlReportTest#theLedgerCarriesTheModelAndTheRun","cloud.jengu.promise.HtmlReportTest#theSummaryLeadsWithWhatIsKept","cloud.jengu.promise.HtmlReportTest#withoutARunThereIsNoStanding"],"enforced":[]},"REQ-PROMISE-THE-BADGE-SAYS-WHAT-THE-LEDGER-SAYS":{"text":"Beside the page, the ledger draws a badge saying how much is kept and how the last run went: green when everything is kept and nothing fails, amber while promises wait for a test, red when a test citing one failed.","status":"PROVEN","gap":false,"catalogue":"REQ-PROMISE","standing":"PASSING","tested":["cloud.jengu.promise.HtmlReportTest#theBadgeSaysWhatTheLedgerSays"],"enforced":[]},"REQ-PROMISE-THE-PLUGIN-DRAWS-THE-LEDGER":{"text":"A module applying the Gradle plugin draws its ledger and a markdown summary from its jar, its runtime classpath and its tests' results; in a GitHub Actions job the summary is added to the job's own summary.","status":"PROVEN","gap":false,"catalogue":"REQ-PROMISE","assurance":"Proven by APluginPacksAModulesCitationsTest in the plugin's own module, whose jar carries those citations; a classpath holding the framework without the plugin reads this note instead.","standing":"PASSING","tested":["cloud.jengu.promise.gradle.APluginPacksAModulesCitationsTest#eachModuleDrawsItsLedger","cloud.jengu.promise.gradle.APluginPacksAModulesCitationsTest#theProductDrawsOneLedgerAndTheJobSeesIt"],"enforced":[]},"REQ-PROMISE-APPLYING-THE-PLUGIN-IS-ALL-A-MODULE-DOES":{"text":"A module applying the Gradle plugin has its catalogues indexed, its production code's and its tests' citations indexed apart, and its tests' citations packed into its jar — waiting for the tests to compile and never for them to run — with no build code of its own; a module that does not apply it is unchanged.","status":"PROVEN","gap":false,"catalogue":"REQ-PROMISE","assurance":"Proven by APluginPacksAModulesCitationsTest in the plugin's own module, whose jar carries those citations; a classpath holding the framework without the plugin reads this note instead.","standing":"PASSING","tested":["cloud.jengu.promise.gradle.APluginPacksAModulesCitationsTest#aModuleWithoutThePluginIsUnchanged","cloud.jengu.promise.gradle.APluginPacksAModulesCitationsTest#theJarCarriesBothIndexes","cloud.jengu.promise.gradle.APluginPacksAModulesCitationsTest#theJarDoesNotWaitForTheTests"],"enforced":[]}},"groups":[{"kind":"feature","code":"FEAT-PROMISE-DECLARING","title":"Declaring promises: once, by name, in catalogues that compose","description":"A promise is an enum constant whose name is its code, so nothing can cite one that does not exist. Catalogues register themselves as they compile, and several products' catalogues compose into one graph, groups and areas included. What nobody can state yet is declared as a gap and counted.","promises":["REQ-PROMISE-NAME-IS-THE-CODE","REQ-PROMISE-GAP-IS-FIRST-CLASS","REQ-PROMISE-REGISTERED-AT-COMPILE-TIME","REQ-PROMISE-CATALOGUE-READ-WHOLE","REQ-PROMISE-DOWN-LINKS-ONLY","REQ-PROMISE-AREAS-MERGE-BY-CODE","REQ-PROMISE-A-PROMISE-NAMES-ITS-BASIS"]},{"kind":"feature","code":"FEAT-PROMISE-CITING","title":"Citing promises: from tests that prove them and code that enforces them","description":"A test says which promises it proves with its product's own annotation, and production code may say where it enforces one. Both are indexed as they compile, under names of their own, and travel in the module's jar. Only a test's citation proves.","promises":["REQ-PROMISE-CITATION-IS-TYPED","REQ-PROMISE-PROOFS-INDEXED-AT-COMPILE-TIME","REQ-PROMISE-TESTS-CITATIONS-TRAVEL-APART","REQ-PROMISE-ONLY-A-TEST-PROVES"]},{"kind":"feature","code":"FEAT-PROMISE-READING","title":"Reading the graph and the evidence behind it","description":"From a classpath, the composed graph: every promise's status, every group's coverage, and with a run's JUnit results each promise's standing. One product's unreadable evidence is reported and never takes another's down. The same reading draws the markdown report and the HTML ledger.","promises":["REQ-PROMISE-STATUS-IS-DERIVED","REQ-PROMISE-COVERAGE-IS-A-FOLD","REQ-PROMISE-STANDING-IS-READ-FROM-THE-RUN","REQ-PROMISE-STANDING-FOLLOWS-THE-BASIS","REQ-PROMISE-ONE-PRODUCTS-UNREADABLE-EVIDENCE-IS-ITS-OWN","REQ-PROMISE-THE-LEDGER-IS-ONE-PAGE","REQ-PROMISE-THE-BADGE-SAYS-WHAT-THE-LEDGER-SAYS"]},{"kind":"feature","code":"FEAT-PROMISE-BUILDING","title":"Wiring a product's build","description":"One Gradle plugin is all a module applies: it indexes the module's catalogues and citations, packs the tests' citations into its jar, and draws the ledger of what the module promises and what its last run proved.","promises":["REQ-PROMISE-APPLYING-THE-PLUGIN-IS-ALL-A-MODULE-DOES","REQ-PROMISE-THE-PLUGIN-DRAWS-THE-LEDGER"]}],"areas":[],"results":{"cloud.jengu.promise.BasisTest":{"tests":5,"failures":0,"errors":0,"skipped":0},"cloud.jengu.promise.CatalogueProcessorTest":{"tests":3,"failures":0,"errors":0,"skipped":0},"cloud.jengu.promise.CitationIndexTest":{"tests":2,"failures":0,"errors":0,"skipped":0},"cloud.jengu.promise.CodeAndGapTest":{"tests":4,"failures":0,"errors":0,"skipped":0},"cloud.jengu.promise.EvidenceTest":{"tests":5,"failures":0,"errors":0,"skipped":0},"cloud.jengu.promise.HtmlReportTest":{"tests":5,"failures":0,"errors":0,"skipped":0},"cloud.jengu.promise.ModelTest":{"tests":5,"failures":0,"errors":0,"skipped":0},"cloud.jengu.promise.StatusAndCoverageTest":{"tests":3,"failures":0,"errors":0,"skipped":0},"cloud.jengu.promise.TheToolsetKeepsItsPromisesTest":{"tests":3,"failures":0,"errors":0,"skipped":0},"cloud.jengu.promise.TwoIndexesTest":{"tests":5,"failures":0,"errors":0,"skipped":0},"cloud.jengu.promise.gradle.APluginPacksAModulesCitationsTest":{"tests":7,"failures":0,"errors":0,"skipped":0}},"unreadable":[]}</script>
+<script>
+(() => {
+  const model = JSON.parse(document.getElementById('model').textContent);
+  if (model.title) document.getElementById('eyebrow').textContent = model.title;
+  const STATUSES = ['PROVEN', 'ASSURED', 'BASED', 'PLANNED', 'GAP'];
+  const STANDINGS = ['PASSING', 'FAILING', 'NO_RESULT', 'UNCITED'];
+  const RUN = { PASSING: 'Passing', FAILING: 'Failing', NO_RESULT: 'No result', UNCITED: 'Uncited' };
+  const hasRun = Object.values(model.promises).some(p => p.standing);
+  const results = model.results || {};
+  const LABEL = { PROVEN: 'Proven', ASSURED: 'Assured', BASED: 'By basis', PLANNED: 'Planned', GAP: 'Unknown' };
+  const KINDS = [
+    { id: 'stories', kind: 'story', name: 'Stories', type: 'Story',
+      intro: 'What somebody does, and what the system holds up while they do it.' },
+    { id: 'features', kind: 'feature', name: 'Features', type: 'Feature',
+      intro: 'What the product does, each as the promises that make it true.' },
+    { id: 'qualities', kind: 'quality', name: 'Qualities', type: 'Quality',
+      intro: 'How well it does it: properties that hold across everything.' },
+    { id: 'constraints', kind: 'constraint', name: 'Constraints', type: 'Constraint',
+      intro: 'What it must obey: regulation and policy, clause by clause.' },
+    { id: 'areas', kind: 'area', name: 'Areas', type: 'Area',
+      intro: 'Concerns that span stories, features, qualities and constraints, folded together.' },
+  ];
+
+  const el = (tag, attrs = {}, ...kids) => {
+    const node = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs)) {
+      if (v === undefined || v === null || v === false) continue;
+      if (k === 'class') node.className = v;
+      else if (k === 'text') node.textContent = v;
+      else if (k.startsWith('on')) node.addEventListener(k.slice(2), v);
+      else node.setAttribute(k, v === true ? '' : v);
+    }
+    for (const kid of kids.flat()) if (kid !== null && kid !== undefined) node.append(kid);
+    return node;
+  };
+
+  const promiseOf = code => model.promises[code];
+  const fold = codes => {
+    const c = { PROVEN: 0, ASSURED: 0, BASED: 0, PLANNED: 0, GAP: 0 };
+    for (const code of codes) { const p = promiseOf(code); if (p) c[p.status]++; }
+    return c;
+  };
+  const total = c => STATUSES.reduce((n, s) => n + (c[s] || 0), 0);
+  const kept = c => (c.PROVEN || 0) + (c.ASSURED || 0) + (c.BASED || 0);
+  const pct = c => total(c) ? Math.round(1000 * kept(c) / total(c)) / 10 : 0;
+  const bar = (c, cls = 'bar') => el('div', { class: cls, role: 'img',
+      'aria-label': `${kept(c)} of ${total(c)} kept` },
+    STATUSES.filter(s => c[s]).map(s => el('i', { class: 's-' + s,
+      style: `width:${100 * c[s] / total(c)}%`, title: `${LABEL[s]}: ${c[s]}` })));
+
+  const groupsByKind = kind => kind === 'area' ? model.areas : model.groups.filter(g => g.kind === kind);
+  const groupByCode = Object.fromEntries(model.groups.map(g => [g.code, g]));
+  const areaCodes = area => [...new Set(area.covers.flatMap(c => groupByCode[c] ? groupByCode[c].promises : []))];
+  const codesOf = (g, kind) => kind === 'area' ? areaCodes(g) : g.promises;
+
+  // ── summary ────────────────────────────────────────
+  const all = Object.keys(model.promises);
+  const overall = fold(all);
+  document.getElementById('rate').append(`${pct(overall)}%`, el('small', { text: 'kept' }));
+  document.getElementById('rate-bar').replaceWith(bar(overall, 'bar thick'));
+  document.getElementById('rate-caption').textContent =
+    `${kept(overall)} of ${total(overall)} promises proven by a test, assured by a recorded reason, or kept by the promises they are based on.`;
+  const standingOf = codes => {
+    const c = { PASSING: 0, FAILING: 0, NO_RESULT: 0, UNCITED: 0 };
+    for (const code of codes) { const p = promiseOf(code); if (p && p.standing) c[p.standing]++; }
+    return c;
+  };
+  if (hasRun) {
+    const run = standingOf(all);
+    const line = document.getElementById('runline');
+    line.append(el('span', {}, 'Last run: ', el('b', { text: run.PASSING }), ' passing'));
+    for (const s of ['FAILING', 'NO_RESULT', 'UNCITED']) {
+      line.append(el('span', { class: 'run' }, el('i', { class: 'r-' + s }), `${run[s]} ${RUN[s].toLowerCase()}`));
+    }
+    line.append(el('span', { text: `${Object.keys(results).length} test classes reported` }));
+  }
+  if ((model.unreadable || []).length) {
+    const box = document.getElementById('unreadable');
+    box.hidden = false;
+    box.append(el('strong', { text: `${model.unreadable.length} source${model.unreadable.length > 1 ? 's' : ''} could not be read, so this page may be missing what they hold:` }));
+    for (const u of model.unreadable) box.append(el('div', {}, el('code', { text: u.source }), ' — ', u.reason));
+  }
+  const tiles = document.getElementById('tiles');
+  for (const s of STATUSES) {
+    tiles.append(el('div', { class: 'tile' }, el('b', { text: overall[s] }),
+      el('span', {}, el('i', { class: 'legend-dot s-' + s }), LABEL[s])));
+  }
+  const catalogues = {};
+  for (const p of Object.values(model.promises)) if (!p.gap) catalogues[p.catalogue] = (catalogues[p.catalogue] || 0) + 1;
+  const products = document.getElementById('products');
+  products.append('Composed from');
+  for (const [ns, n] of Object.entries(catalogues).sort((a, b) => b[1] - a[1])) {
+    products.append(el('span', { class: 'chip', title: `${n} promises` }, ns, el('span', { text: n, style: 'color:var(--faint)' })));
+  }
+
+  // ── tabs ───────────────────────────────────────────
+  const tabs = document.getElementById('tabs');
+  for (const k of KINDS) {
+    const groups = groupsByKind(k.kind);
+    const c = fold([...new Set(groups.flatMap(g => codesOf(g, k.kind)))]);
+    tabs.append(el('button', { class: 'tab' + (groups.length ? '' : ' is-empty'), role: 'tab', id: 'tab-' + k.id, 'aria-controls': 'panel',
+        'aria-selected': 'false', onclick: () => show(k.id) },
+      el('span', { class: 'name' }, k.name, el('span', { class: 'count', text: groups.length })),
+      bar(c)));
+  }
+
+  // ── state ──────────────────────────────────────────
+  const state = { tab: null, query: '', statuses: new Set(STATUSES), sort: 'catalogue', open: new Set() };
+  const search = document.getElementById('search');
+  const sort = document.getElementById('sort');
+  search.addEventListener('input', () => { state.query = search.value.trim().toLowerCase(); render(); });
+  sort.addEventListener('change', () => { state.sort = sort.value; render(); });
+  const filters = document.getElementById('filters');
+  for (const s of STATUSES) {
+    const b = el('button', { class: 'filter', 'aria-pressed': 'true', onclick: () => {
+      state.statuses.has(s) ? state.statuses.delete(s) : state.statuses.add(s);
+      if (!state.statuses.size) STATUSES.forEach(x => state.statuses.add(x));
+      [...filters.children].forEach((f, i) => f.setAttribute('aria-pressed', state.statuses.has(STATUSES[i])));
+      render();
+    } }, el('i', { class: 'legend-dot s-' + s }), LABEL[s]);
+    filters.append(b);
+  }
+
+  const matches = code => {
+    const p = promiseOf(code);
+    if (!p || !state.statuses.has(p.status)) return false;
+    if (!state.query) return true;
+    return [code, p.text, ...(p.tested || []), ...(p.enforced || [])].some(t => t.toLowerCase().includes(state.query));
+  };
+
+  // ── groups ─────────────────────────────────────────
+  const shortSite = (site, tested) => {
+    const [cls, member] = site.split('#');
+    const simple = cls.slice(cls.lastIndexOf('.') + 1);
+    let verdict = null;
+    if (tested && hasRun) {
+      const r = results[cls];
+      verdict = !r || !r.tests ? el('span', { class: 'none', text: '  — did not run' })
+        : r.failures + r.errors ? el('span', { class: 'bad', text: `  ✗ ${r.failures + r.errors} of ${r.tests} failed` })
+        : r.skipped ? el('span', { class: 'none', text: `  ${r.skipped} of ${r.tests} skipped` })
+        : el('span', { class: 'ok', text: `  ✓ class passed, ${r.tests} test${r.tests > 1 ? 's' : ''}` });
+    }
+    return el('span', { title: site }, el('span', { class: 'cls', text: cls.slice(0, cls.length - simple.length) }),
+      simple, member ? '#' + member : '', verdict);
+  };
+
+  const promiseRow = code => {
+    const p = promiseOf(code);
+    const li = el('li', { class: 'promise' },
+      el('span', { class: 'pill p-' + p.status, text: LABEL[p.status] }),
+      el('div', { class: 'text' + (p.gap ? ' gap' : ''), text: p.text }));
+    const meta = el('div', { class: 'meta' }, el('span', { class: 'code', text: p.gap ? code + ' · nobody has stated this yet' : code }));
+    if (p.standing) meta.append(el('span', { class: 'run', title: 'In the last run' }, el('i', { class: 'r-' + p.standing }), RUN[p.standing]));
+    const sites = (p.tested || []).length + (p.enforced || []).length;
+    let box = null;
+    if (sites) {
+      const label = [(p.tested || []).length ? `${p.tested.length} test${p.tested.length > 1 ? 's' : ''}` : null,
+        (p.enforced || []).length ? `${p.enforced.length} enforcing` : null].filter(Boolean).join(' · ');
+      const toggle = el('button', { class: 'cite-toggle', 'aria-expanded': 'false', text: label + ' ▸', onclick: () => {
+        box.hidden = !box.hidden;
+        toggle.setAttribute('aria-expanded', !box.hidden);
+        toggle.textContent = label + (box.hidden ? ' ▸' : ' ▾');
+      } });
+      meta.append(toggle);
+      box = el('div', { class: 'sites', hidden: true },
+        (p.tested || []).length ? [el('div', { class: 'kind', text: 'Proven by' }), p.tested.map(t => shortSite(t, true))] : [],
+        (p.enforced || []).length ? [el('div', { class: 'kind', text: 'Enforced in' }), p.enforced.map(t => shortSite(t, false))] : []);
+    }
+    li.append(meta);
+    if (box) li.append(box);
+    if ((p.basis || []).length) {
+      li.append(el('ul', { class: 'basis' },
+        el('li', { class: 'label', text: 'Based on' }),
+        p.basis.map(code => {
+          const g = promiseOf(code);
+          if (!g) return el('li', {}, el('span', {}), el('span', { class: 'ground', text: code }));
+          return el('li', {},
+            el('span', { class: 'pill p-' + g.status, text: LABEL[g.status] }),
+            el('span', { class: 'ground' },
+              el('span', { class: 'code', text: code }),
+              g.text,
+              g.standing ? el('span', { class: 'run', style: 'margin-left:8px' },
+                el('i', { class: 'r-' + g.standing }), RUN[g.standing]) : null));
+        })));
+    }
+    if (p.assurance) li.append(el('div', { class: 'note', text: p.assurance }));
+    return li;
+  };
+
+  const groupCard = (g, kind) => {
+    const codes = codesOf(g, kind);
+    const c = fold(codes);
+    const shown = codes.filter(matches);
+    const isOpen = state.open.has(g.code) || (state.query && shown.length);
+    const card = el('section', { class: 'group', id: g.code, open: isOpen });
+    const n = total(c);
+    const head = el('button', { class: 'group-head', 'aria-expanded': String(!!isOpen), onclick: () => {
+        state.open.has(g.code) ? state.open.delete(g.code) : state.open.add(g.code);
+        render();
+      } },
+      el('div', { class: 'group-title' },
+        el('div', { class: 'codeline' }, el('span', { class: 'caret', text: '▶' }), el('span', { class: 'chip', text: g.code })),
+        el('h3', { text: g.title }),
+        g.description ? el('p', { text: g.description }) : null),
+      el('div', { class: 'group-rate' },
+        el('div', { class: 'nums' },
+          kept(c) === n ? el('span', { class: 'done', text: 'All kept' }) : el('span', { text: `${pct(c)}% kept` }),
+          el('span', {}, el('b', { text: kept(c) }), ` / ${n}`)),
+        bar(c),
+        hasRun ? (() => { const r = standingOf(codes);
+          return r.FAILING ? el('span', { class: 'run' }, el('i', { class: 'r-FAILING' }), `${r.FAILING} failing in the last run`)
+            : el('span', { class: 'run' }, el('i', { class: 'r-' + (r.PASSING === n ? 'PASSING' : 'NO_RESULT') }),
+                `${r.PASSING} of ${n} passing in the last run`); })() : null));
+    card.append(head);
+    const body = el('div', { class: 'group-body', hidden: !isOpen });
+    if (kind === 'area') {
+      body.append(el('div', { class: 'covers' }, g.covers.map(code => {
+        const inner = groupByCode[code];
+        if (!inner) return null;
+        const ic = fold(inner.promises);
+        const target = KINDS.find(k => k.kind === inner.kind);
+        return el('button', { class: 'cover', onclick: () => { state.open.add(code); show(target.id, code); } },
+          el('span', { class: 'kindtag', text: inner.kind }),
+          el('span', { class: 'title', text: inner.title }),
+          el('span', { class: 'mini' }, `${kept(ic)} / ${total(ic)}`, bar(ic)));
+      })));
+    } else {
+      body.append(shown.length ? el('ul', { class: 'promises' }, shown.map(promiseRow))
+        : el('div', { class: 'empty', text: 'No promise here matches the search or the status filter.' }));
+    }
+    card.append(body);
+    return card;
+  };
+
+  const sample = k => k.kind === 'area'
+    ? `@Catalogue(namespace = "AREA-SHOP")
+public enum ShopAreas implements Area {
+    PAYMENTS("Taking and returning money", List.of(ShopFeatures.CHECKOUT, ShopFeatures.REFUNDS));
+    // title() and covers() return what the constructor was given
+}`
+    : `@Catalogue(namespace = "${{ story: 'US', feature: 'FEAT', quality: 'QUAL', constraint: 'CON' }[k.kind]}-SHOP")
+public enum Shop${k.name} implements ${k.type} {
+    CHECKOUT("Somebody buys what is in their basket", List.of(
+            ShopPromises.ORDER_TOTAL_IS_THE_SUM_OF_ITS_LINES,
+            Promise.gap("what happens when the payment provider times out")));
+    // title() and promises() return what the constructor was given
+}`;
+
+  function render() {
+    const k = KINDS.find(x => x.id === state.tab);
+    document.getElementById('tab-intro').textContent = k.intro;
+    document.querySelector('.toolbar').hidden = !groupsByKind(k.kind).length;
+    if (!groupsByKind(k.kind).length) {
+      document.getElementById('groups').replaceChildren(el('div', { class: 'empty' },
+        el('div', { class: 'declare' },
+          el('strong', { text: `No ${k.name.toLowerCase()} declared yet` }),
+          el('span', { text: `A ${k.type} groups promises under one title, and reads as kept when every promise in it is. Declare one in a catalogue of its own:` }),
+          el('pre', { text: sample(k) }))));
+      return;
+    }
+    let groups = groupsByKind(k.kind).map((g, i) => ({ g, i, c: fold(codesOf(g, k.kind)) }));
+    if (state.query || state.statuses.size < STATUSES.length) {
+      groups = groups.filter(({ g }) => codesOf(g, k.kind).some(matches)
+        || (state.query && (g.title + ' ' + g.code).toLowerCase().includes(state.query)));
+    }
+    if (state.sort === 'weakest') groups.sort((a, b) => pct(a.c) - pct(b.c) || total(b.c) - total(a.c));
+    if (state.sort === 'largest') groups.sort((a, b) => total(b.c) - total(a.c) || a.i - b.i);
+    const list = document.getElementById('groups');
+    list.replaceChildren(...(groups.length ? groups.map(({ g }) => groupCard(g, k.kind))
+      : [el('div', { class: 'empty', text: 'Nothing here matches the search or the status filter.' })]));
+  }
+
+  function show(id, focus) {
+    if (!KINDS.some(k => k.id === id)) id = (KINDS.find(k => groupsByKind(k.kind).length) || KINDS[0]).id;
+    state.tab = id;
+    for (const t of tabs.children) t.setAttribute('aria-selected', String(t.id === 'tab-' + id));
+    try { history.replaceState(null, '', '#' + id); } catch (e) { /* framed */ }
+    render();
+    if (focus) {
+      const card = document.getElementById(focus);
+      if (card) {
+        card.scrollIntoView({ block: 'start', behavior: 'smooth' });
+        card.classList.add('flash');
+        setTimeout(() => card.classList.remove('flash'), 1400);
+      }
+    }
+  }
+
+  const foot = document.getElementById('foot');
+  foot.append(el('span', { text: `Generated ${new Date(model.generated).toLocaleString()}` }),
+    el('span', { text: `${model.groups.length} groups · ${model.areas.length} areas · ${all.length} promises` }),
+    el('span', { text: 'Kept = proven by a citing test, assured by a recorded reason, or kept by its basis.' }));
+
+  show((location.hash || '').slice(1) || (KINDS.find(k => groupsByKind(k.kind).length) || KINDS[0]).id);
+})();
+</script>
+</body>
+</html>
