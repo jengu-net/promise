@@ -103,6 +103,22 @@ public final class Registry {
         return new Model(catalogues, proofs);
     }
 
+    /**
+     * A catalogue's constants, built. A constant naming ground the classpath
+     * does not carry in its constructor fails as its class initialises, and is
+     * refused here by name rather than escaping as a linkage error.
+     */
+    static Object[] constantsOf(Class<?> catalogue) {
+        try {
+            return catalogue.getEnumConstants();
+        } catch (LinkageError stale) {
+            throw new IllegalStateException(catalogue.getName() + " cannot be built: a promise "
+                    + "it declares is based on one this classpath does not carry ("
+                    + stale.getMessage() + ") — a stale basis is a build defect, not a "
+                    + "skippable line", stale);
+        }
+    }
+
     private static Class<?> catalogueClass(ClassLoader loader, String name, URL index) {
         try {
             return validated(Class.forName(name, false, loader), "named by " + index);
@@ -144,13 +160,14 @@ public final class Registry {
         private final Map<String, MergedArea> areas = new LinkedHashMap<>();
         private final Map<Promise, List<Classified>> declaring = new LinkedHashMap<>();
         private final Map<Promise, String> namespaces = new LinkedHashMap<>();
+        private final Map<Promise, List<Promise>> basedOn = new LinkedHashMap<>();
         private final Proofs proofs;
 
         private Model(List<Class<?>> catalogues, Proofs proofs) {
             this.proofs = proofs;
             for (Class<?> catalogue : catalogues) {
                 String namespace = catalogue.getAnnotation(Catalogue.class).namespace();
-                for (Object constant : catalogue.getEnumConstants()) {
+                for (Object constant : constantsOf(catalogue)) {
                     if (constant instanceof Promise promise) {
                         promises.add(promise);
                     }
@@ -174,6 +191,108 @@ public final class Registry {
                     }
                 }
             }
+            // The basis, inverted once — and refused whole when a promise names
+            // ground this classpath cannot carry, or rests on itself.
+            for (Promise promise : promises) {
+                for (Promise ground : basisOf(promise)) {
+                    basedOn.computeIfAbsent(ground, p -> new ArrayList<>()).add(promise);
+                }
+            }
+            List<Promise> cycle = cycle(promises);
+            if (cycle != null) {
+                throw new IllegalStateException(cycleMessage(cycle));
+            }
+        }
+
+        /**
+         * What a promise is based on, as it declares it.
+         *
+         * @throws IllegalStateException when it names a constant the classpath
+         *         does not carry, or one not built yet — a stale basis is a
+         *         build defect, as a stale citation is
+         */
+        static List<Promise> basisOf(Promise promise) {
+            List<Promise> basis;
+            try {
+                basis = promise.basis();
+            } catch (LinkageError stale) {
+                throw new IllegalStateException(promise.code() + " is based on a promise this "
+                        + "classpath does not carry (" + stale.getMessage() + ") — a stale "
+                        + "basis is a build defect, not a skippable line", stale);
+            }
+            for (Promise ground : basis) {
+                if (ground == null) {
+                    throw new IllegalStateException(promise.code() + " is based on a promise "
+                            + "that is not built yet — a constant of its own catalogue declared "
+                            + "after it, named from its constructor; return its basis from an "
+                            + "overriding method instead");
+                }
+            }
+            return List.copyOf(basis);
+        }
+
+        /** A cycle among the bases reachable from these promises, in order, or null. */
+        static List<Promise> cycle(java.util.Collection<Promise> promises) {
+            Map<Promise, Integer> state = new java.util.HashMap<>();
+            java.util.Deque<Promise> path = new java.util.ArrayDeque<>();
+            for (Promise promise : promises) {
+                List<Promise> found = cycleFrom(promise, state, path);
+                if (found != null) {
+                    return found;
+                }
+            }
+            return null;
+        }
+
+        private static List<Promise> cycleFrom(Promise promise, Map<Promise, Integer> state,
+                java.util.Deque<Promise> path) {
+            Integer seen = state.get(promise);
+            if (seen != null && seen == 2) {
+                return null;
+            }
+            if (seen != null) {
+                List<Promise> cycle = new ArrayList<>();
+                boolean in = false;
+                for (java.util.Iterator<Promise> it = path.descendingIterator(); it.hasNext(); ) {
+                    Promise step = it.next();
+                    in = in || step == promise;
+                    if (in) {
+                        cycle.add(step);
+                    }
+                }
+                cycle.add(promise);
+                return cycle;
+            }
+            state.put(promise, 1);
+            path.push(promise);
+            for (Promise ground : basisOf(promise)) {
+                List<Promise> found = cycleFrom(ground, state, path);
+                if (found != null) {
+                    return found;
+                }
+            }
+            path.pop();
+            state.put(promise, 2);
+            return null;
+        }
+
+        static String cycleMessage(List<Promise> cycle) {
+            StringBuilder names = new StringBuilder();
+            for (Promise step : cycle) {
+                names.append(names.length() == 0 ? "" : " → ").append(step.code());
+            }
+            return "these promises are each other's basis, so none of them rests on anything: "
+                    + names;
+        }
+
+        /** What {@code promise} is based on, as it declares it. Empty for one based on nothing. */
+        public List<Promise> basis(Promise promise) {
+            return basisOf(promise);
+        }
+
+        /** The derived inverse: the promises of the graph based on {@code promise}. */
+        public List<Promise> basedOn(Promise promise) {
+            return List.copyOf(basedOn.getOrDefault(promise, List.of()));
         }
 
         public List<Promise> promises() {
@@ -197,9 +316,10 @@ public final class Registry {
         /**
          * Derived, never asserted (REQ-PROMISE-STATUS-IS-DERIVED): cited is
          * proven — the report is only ever generated from a green build, the
-         * same trust the close-after-CI gate encodes — named-uncited is
-         * planned, an assurance note on the constant is review-based, and a
-         * gap is a gap.
+         * same trust the close-after-CI gate encodes — an assurance note on the
+         * constant is review-based, a promise cited by nothing of its own whose
+         * every basis is kept is kept by that basis, named-uncited is planned,
+         * and a gap is a gap.
          */
         public PromiseStatus statusOf(Promise promise) {
             if (promise.gap()) {
@@ -208,7 +328,14 @@ public final class Registry {
             if (proofs.cited(promise)) {
                 return PromiseStatus.PROVEN;
             }
-            return promise.assurance() != null ? PromiseStatus.ASSURED : PromiseStatus.PLANNED;
+            if (promise.assurance() != null) {
+                return PromiseStatus.ASSURED;
+            }
+            List<Promise> basis = basisOf(promise);
+            if (!basis.isEmpty() && basis.stream().allMatch(ground -> statusOf(ground).kept())) {
+                return PromiseStatus.BASED;
+            }
+            return PromiseStatus.PLANNED;
         }
 
         /** The tests proving {@code promise}; empty is the answer "nobody". */

@@ -8,7 +8,7 @@
 
 A promise is an enum constant whose name is its code, so nothing can cite one that does not exist. Catalogues register themselves as they compile, and several products' catalogues compose into one graph, groups and areas included. What nobody can state yet is declared as a gap and counted.
 
-coverage: 6/6 — {PROVEN=6}
+coverage: 7/7 — {PROVEN=7}
 
 | promise | status | proven by |
 |---|---|---|
@@ -18,6 +18,7 @@ coverage: 6/6 — {PROVEN=6}
 | REQ-PROMISE-CATALOGUE-READ-WHOLE | PROVEN | cloud.jengu.promise.CatalogueProcessorTest#registryLoadsWhatCompilationLeftBehind<br>cloud.jengu.promise.ModelTest#readWhole |
 | REQ-PROMISE-DOWN-LINKS-ONLY | PROVEN | cloud.jengu.promise.ModelTest#downLinksOnly |
 | REQ-PROMISE-AREAS-MERGE-BY-CODE | PROVEN | cloud.jengu.promise.ModelTest#areasMergeByCode<br>cloud.jengu.promise.ModelTest#conflictingAreasRefused |
+| REQ-PROMISE-A-PROMISE-NAMES-ITS-BASIS | PROVEN | cloud.jengu.promise.BasisTest#aCycleIsRefused<br>cloud.jengu.promise.BasisTest#aStaleBasisIsRefused<br>cloud.jengu.promise.BasisTest#theModelAnswersBothDirections |
 
 ### FEAT-PROMISE-CITING — Citing promises: from tests that prove them and code that enforces them
 
@@ -36,15 +37,16 @@ coverage: 4/4 — {PROVEN=4}
 
 From a classpath, the composed graph: every promise's status, every group's coverage, and with a run's JUnit results each promise's standing. One product's unreadable evidence is reported and never takes another's down. The same reading draws the markdown report and the HTML ledger.
 
-coverage: 6/6 — {PROVEN=6}
+coverage: 7/7 — {PROVEN=7}
 
 | promise | status | proven by |
 |---|---|---|
 | REQ-PROMISE-STATUS-IS-DERIVED | PROVEN | cloud.jengu.promise.StatusAndCoverageTest#statusIsDerived<br>cloud.jengu.promise.TwoIndexesTest#theReadingTellsTheTwoApart |
 | REQ-PROMISE-COVERAGE-IS-A-FOLD | PROVEN | cloud.jengu.promise.StatusAndCoverageTest#coverageIsAFold |
 | REQ-PROMISE-STANDING-IS-READ-FROM-THE-RUN | PROVEN | cloud.jengu.promise.EvidenceTest#failingWins<br>cloud.jengu.promise.EvidenceTest#noResult<br>cloud.jengu.promise.EvidenceTest#passingAndUncited<br>cloud.jengu.promise.EvidenceTest#resultsFromTheClasspath |
+| REQ-PROMISE-STANDING-FOLLOWS-THE-BASIS | PROVEN | cloud.jengu.promise.BasisTest#standingFollowsTheBasis |
 | REQ-PROMISE-ONE-PRODUCTS-UNREADABLE-EVIDENCE-IS-ITS-OWN | PROVEN | cloud.jengu.promise.EvidenceTest#oneProductsUnreadableIndexIsReported |
-| REQ-PROMISE-THE-LEDGER-IS-ONE-PAGE | PROVEN | cloud.jengu.promise.HtmlReportTest#aCatalogueCannotWriteMarkupIntoThePage<br>cloud.jengu.promise.HtmlReportTest#theLedgerCarriesTheModelAndTheRun<br>cloud.jengu.promise.HtmlReportTest#theSummaryLeadsWithWhatIsKept<br>cloud.jengu.promise.HtmlReportTest#withoutARunThereIsNoStanding |
+| REQ-PROMISE-THE-LEDGER-IS-ONE-PAGE | PROVEN | cloud.jengu.promise.BasisTest#theLedgerShowsTheBasis<br>cloud.jengu.promise.HtmlReportTest#aCatalogueCannotWriteMarkupIntoThePage<br>cloud.jengu.promise.HtmlReportTest#theLedgerCarriesTheModelAndTheRun<br>cloud.jengu.promise.HtmlReportTest#theSummaryLeadsWithWhatIsKept<br>cloud.jengu.promise.HtmlReportTest#withoutARunThereIsNoStanding |
 | REQ-PROMISE-THE-BADGE-SAYS-WHAT-THE-LEDGER-SAYS | PROVEN | cloud.jengu.promise.HtmlReportTest#theBadgeSaysWhatTheLedgerSays |
 
 ### FEAT-PROMISE-BUILDING — Wiring a product's build

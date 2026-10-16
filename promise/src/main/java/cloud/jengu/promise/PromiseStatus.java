@@ -16,6 +16,18 @@ public enum PromiseStatus {
     /** Assured by recorded review rather than by an executable test. */
     ASSURED,
 
+    /**
+     * Cited by no test of its own, and kept by the promises it is based on —
+     * every one of them proven, assured or based in turn. Kept, and told apart
+     * from a promise its own tests prove.
+     */
+    BASED,
+
     /** Ground nobody has stated: a {@link Promise#gap(String)}. */
-    GAP
+    GAP;
+
+    /** Whether a promise with this status is kept: proven, assured, or based on kept ground. */
+    public boolean kept() {
+        return this == PROVEN || this == ASSURED || this == BASED;
+    }
 }

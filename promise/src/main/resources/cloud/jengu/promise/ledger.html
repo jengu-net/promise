@@ -88,6 +88,7 @@ button { font: inherit; color: inherit; }
 .bar i { display: block; height: 100%; }
 .s-PROVEN { background: var(--kept); }
 .s-ASSURED { background: var(--assured); }
+.s-BASED { background: repeating-linear-gradient(135deg, var(--kept) 0 4px, var(--assured) 4px 8px); }
 .s-PLANNED { background: var(--planned); }
 .s-GAP { background: repeating-linear-gradient(135deg, var(--gap) 0 3px, transparent 3px 6px); }
 
@@ -154,6 +155,7 @@ button { font: inherit; color: inherit; }
 }
 .p-PROVEN { background: var(--kept-soft); color: var(--kept); }
 .p-ASSURED { background: var(--kept-soft); color: var(--assured); }
+.p-BASED { background: var(--kept-soft); color: var(--kept); border: 1px dashed var(--kept); }
 .p-PLANNED { background: var(--accent-soft); color: var(--accent); }
 .p-GAP { background: var(--gap-soft); color: var(--gap); border: 1px dashed var(--gap); }
 .promise .text { color: var(--ink); max-width: 76ch; }
@@ -166,6 +168,12 @@ button { font: inherit; color: inherit; }
 .sites .kind:first-child { margin-top: 0; }
 .sites span { white-space: nowrap; }
 .sites .cls { color: var(--muted); }
+.basis { grid-column: 2; margin: 6px 0 0; padding: 8px 0 0 12px; border-left: 2px solid var(--line); display: grid; gap: 6px; list-style: none; }
+.basis .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--faint); }
+.basis li { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 2px 10px; align-items: start; }
+.basis .pill { font-size: 10px; padding: 2px 6px; }
+.basis .ground { color: var(--body); font-size: 13.5px; }
+.basis .ground .code { display: block; color: var(--muted); font-size: 12px; }
 .note { grid-column: 2; font-size: 13px; color: var(--muted); border-left: 2px solid var(--assured); padding-left: 10px; max-width: 76ch; }
 
 /* ── areas ───────────────────────────────────────────── */
@@ -201,7 +209,7 @@ button { font: inherit; color: inherit; }
   .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .group-head { grid-template-columns: minmax(0, 1fr); gap: 12px; }
   .promise { grid-template-columns: minmax(0, 1fr); }
-  .promise .meta, .sites, .note { grid-column: 1; }
+  .promise .meta, .sites, .note, .basis { grid-column: 1; }
   .cover { grid-template-columns: minmax(0, 1fr); gap: 4px; }
   .cover .mini { text-align: left; }
   .sort { margin-left: 0; }
@@ -254,12 +262,12 @@ button { font: inherit; color: inherit; }
 (() => {
   const model = JSON.parse(document.getElementById('model').textContent);
   if (model.title) document.getElementById('eyebrow').textContent = model.title;
-  const STATUSES = ['PROVEN', 'ASSURED', 'PLANNED', 'GAP'];
+  const STATUSES = ['PROVEN', 'ASSURED', 'BASED', 'PLANNED', 'GAP'];
   const STANDINGS = ['PASSING', 'FAILING', 'NO_RESULT', 'UNCITED'];
   const RUN = { PASSING: 'Passing', FAILING: 'Failing', NO_RESULT: 'No result', UNCITED: 'Uncited' };
   const hasRun = Object.values(model.promises).some(p => p.standing);
   const results = model.results || {};
-  const LABEL = { PROVEN: 'Proven', ASSURED: 'Assured', PLANNED: 'Planned', GAP: 'Unknown' };
+  const LABEL = { PROVEN: 'Proven', ASSURED: 'Assured', BASED: 'By basis', PLANNED: 'Planned', GAP: 'Unknown' };
   const KINDS = [
     { id: 'stories', kind: 'story', name: 'Stories', type: 'Story',
       intro: 'What somebody does, and what the system holds up while they do it.' },
@@ -288,12 +296,12 @@ button { font: inherit; color: inherit; }
 
   const promiseOf = code => model.promises[code];
   const fold = codes => {
-    const c = { PROVEN: 0, ASSURED: 0, PLANNED: 0, GAP: 0 };
+    const c = { PROVEN: 0, ASSURED: 0, BASED: 0, PLANNED: 0, GAP: 0 };
     for (const code of codes) { const p = promiseOf(code); if (p) c[p.status]++; }
     return c;
   };
   const total = c => STATUSES.reduce((n, s) => n + (c[s] || 0), 0);
-  const kept = c => (c.PROVEN || 0) + (c.ASSURED || 0);
+  const kept = c => (c.PROVEN || 0) + (c.ASSURED || 0) + (c.BASED || 0);
   const pct = c => total(c) ? Math.round(1000 * kept(c) / total(c)) / 10 : 0;
   const bar = (c, cls = 'bar') => el('div', { class: cls, role: 'img',
       'aria-label': `${kept(c)} of ${total(c)} kept` },
@@ -311,7 +319,7 @@ button { font: inherit; color: inherit; }
   document.getElementById('rate').append(`${pct(overall)}%`, el('small', { text: 'kept' }));
   document.getElementById('rate-bar').replaceWith(bar(overall, 'bar thick'));
   document.getElementById('rate-caption').textContent =
-    `${kept(overall)} of ${total(overall)} promises proven by a test or assured by a recorded reason.`;
+    `${kept(overall)} of ${total(overall)} promises proven by a test, assured by a recorded reason, or kept by the promises they are based on.`;
   const standingOf = codes => {
     const c = { PASSING: 0, FAILING: 0, NO_RESULT: 0, UNCITED: 0 };
     for (const code of codes) { const p = promiseOf(code); if (p && p.standing) c[p.standing]++; }
@@ -420,6 +428,21 @@ button { font: inherit; color: inherit; }
     }
     li.append(meta);
     if (box) li.append(box);
+    if ((p.basis || []).length) {
+      li.append(el('ul', { class: 'basis' },
+        el('li', { class: 'label', text: 'Based on' }),
+        p.basis.map(code => {
+          const g = promiseOf(code);
+          if (!g) return el('li', {}, el('span', {}), el('span', { class: 'ground', text: code }));
+          return el('li', {},
+            el('span', { class: 'pill p-' + g.status, text: LABEL[g.status] }),
+            el('span', { class: 'ground' },
+              el('span', { class: 'code', text: code }),
+              g.text,
+              g.standing ? el('span', { class: 'run', style: 'margin-left:8px' },
+                el('i', { class: 'r-' + g.standing }), RUN[g.standing]) : null));
+        })));
+    }
     if (p.assurance) li.append(el('div', { class: 'note', text: p.assurance }));
     return li;
   };
@@ -526,7 +549,7 @@ public enum Shop${k.name} implements ${k.type} {
   const foot = document.getElementById('foot');
   foot.append(el('span', { text: `Generated ${new Date(model.generated).toLocaleString()}` }),
     el('span', { text: `${model.groups.length} groups · ${model.areas.length} areas · ${all.length} promises` }),
-    el('span', { text: 'Kept = proven by a citing test, or assured by a recorded reason.' }));
+    el('span', { text: 'Kept = proven by a citing test, assured by a recorded reason, or kept by its basis.' }));
 
   show((location.hash || '').slice(1) || (KINDS.find(k => groupsByKind(k.kind).length) || KINDS[0]).id);
 })();

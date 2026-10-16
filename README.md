@@ -112,6 +112,53 @@ CHECKOUT("Checkout", List.of(
 A gap compiles, has a stable code, and counts against its group until
 somebody states it as a promise. Unknown ground is named, never silent.
 
+### A promise based on others
+
+A product that composes another product's catalogue can say what it promises
+in its own words, at the level its readers think in, while its ground is kept
+by the composed product's promises, which are worded for whoever builds that
+product. Such a promise names the promises it is **based on**:
+
+```java
+@Catalogue(namespace = "REQ-CLINIC")
+public enum ClinicPromises implements Promise {
+
+    A_PATIENT_SEES_ONLY_THEIR_OWN_RECORDS(
+            "A patient sees their own records and nobody else's.",
+            List.of(StorePromises.A_TENANT_READS_ONLY_ITS_OWN_DATA,
+                    StorePromises.A_TOKEN_NAMES_ITS_SUBJECT));
+
+    private final String text;
+    private final List<Promise> basis;
+
+    ClinicPromises(String text, List<Promise> basis) {
+        this.text = text;
+        this.basis = basis;
+    }
+
+    @Override public String text() { return text; }
+    @Override public List<Promise> basis() { return basis; }
+}
+```
+
+The basis is any catalogue's constants, the product's own or a composed
+product's. The link runs one way, like a group's: a promise names what it
+rests on, and the model derives the inverse. Naming a later constant of the
+same catalogue from the constructor gives null, which the model refuses; name
+it from an overriding `basis()` method instead.
+
+- **Status:** a promise cited by no test of its own, whose basis is all kept,
+  is **kept by its basis** (`BASED`). It counts as kept, and the reader can
+  tell it apart from one its own tests prove.
+- **Standing:** it passes only when its own citing tests, if any, passed and
+  every promise it is based on passes. It fails when any of them fails, and
+  has no result when any has none.
+- **Refused at load:** a basis naming a constant the classpath does not carry,
+  or a cycle among bases, is refused by name. `Evidence` reports that
+  product's catalogue as unreadable and answers every other product.
+- **The ledger** shows each promise's basis under it, with the basis
+  promises' own status and standing.
+
 ## Keeping promises: proving
 
 Now there is a set of promises, and they need keeping. In code, the easiest
@@ -227,17 +274,20 @@ ClassLoader loader = ...; // the product's jars, or a test's own class loader
 Registry.Model model = Registry.load(loader).model(Proofs.load(loader));
 
 model.promises();                        // every promise of every catalogue, gaps included
-model.statusOf(promise);                 // PROVEN, PLANNED, ASSURED or GAP
+model.statusOf(promise);                 // PROVEN, ASSURED, BASED, PLANNED or GAP
 model.citing(promise);                   // the tests that prove it
 model.enforcing(promise);                // the production code that keeps it
 model.declaring(promise);                // the features and stories it belongs to
+model.basis(promise);                    // the promises it is based on
+model.basedOn(promise);                  // the promises based on it, derived
 model.coverage(ShopFeatures.CHECKOUT);   // {PROVEN=2, GAP=1}
 Report.render(model);                    // a markdown table: promise, status, proven by
 ```
 
 A status is derived, never asserted. A promise a test cites is *proven*; one
 nothing cites is *planned*; one carrying a recorded reason that is not a test
-is *assured*; an unknown is a *gap*. `Registry.load` and `Proofs.load` are
+is *assured*; one cited by no test of its own but based on kept promises is
+*kept by its basis*; an unknown is a *gap*. `Registry.load` and `Proofs.load` are
 strict: an index naming a catalogue or a constant the classpath does not
 carry fails the load, because a stale index is a build defect.
 

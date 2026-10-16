@@ -40,6 +40,13 @@ public enum ToolsetPromises implements Promise {
             "Composition merges same-code areas across catalogues and refuses two with "
             + "conflicting prose rather than picking one."),
 
+    A_PROMISE_NAMES_ITS_BASIS(
+            "A promise may name the promises it is based on — its own catalogue's or a "
+            + "composed product's — and the model answers what it is based on and, derived, "
+            + "what is based on it; a basis the classpath cannot carry, or a cycle among "
+            + "bases, is refused at load by name, and reported as unreadable for that "
+            + "product alone."),
+
     CITATION_IS_TYPED(
             "A test cites promises through its product's own enum-typed annotation, "
             + "recognised by meta-annotation — a mistyped citation is a compile error, "
@@ -68,6 +75,12 @@ public enum ToolsetPromises implements Promise {
     COVERAGE_IS_A_FOLD(
             "A classification's coverage is the fold of its declared promises' "
             + "statuses, gaps included; an area's is the fold of its classifications."),
+
+    STANDING_FOLLOWS_THE_BASIS(
+            "A promise based on others passes only when its own citing tests, if any, "
+            + "passed and every promise it is based on passes; it fails when any of them "
+            + "fails, and has no result when any has none. Cited by no test of its own and "
+            + "based on kept promises, it is kept by its basis, and reads so."),
 
     STANDING_IS_READ_FROM_THE_RUN(
             "Each promise's standing is read from a run's JUnit results: passing only "

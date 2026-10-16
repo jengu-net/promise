@@ -282,6 +282,11 @@ public final class HtmlReport {
             if (evidence != null) {
                 out.append(",\"standing\":").append(q(evidence.standing(promise).name()));
             }
+            List<String> basis = new ArrayList<>();
+            model.basis(promise).forEach(ground -> basis.add(model.codeOf(ground)));
+            if (!basis.isEmpty()) {
+                out.append(",\"basis\":").append(list(basis));
+            }
             out.append(",\"tested\":").append(list(new ArrayList<>(model.citing(promise))));
             out.append(",\"enforced\":").append(list(new ArrayList<>(model.enforcing(promise))));
             out.append('}');
@@ -356,6 +361,16 @@ public final class HtmlReport {
                 promises.putIfAbsent(model.codeOf(promise), promise);
             }
         }
+        // What the shown promises are based on is shown with them, wherever it
+        // is declared: the page draws a promise's basis under it.
+        java.util.Deque<Promise> grounds = new java.util.ArrayDeque<>(promises.values());
+        while (!grounds.isEmpty()) {
+            for (Promise ground : model.basis(grounds.pop())) {
+                if (promises.putIfAbsent(model.codeOf(ground), ground) == null) {
+                    grounds.push(ground);
+                }
+            }
+        }
         return promises;
     }
 
@@ -366,10 +381,9 @@ public final class HtmlReport {
                 .toList();
     }
 
-    /** Kept: proven by a citing test, or assured by a reason recorded on the constant. */
+    /** Kept: proven by a citing test, assured by a recorded reason, or kept by its basis. */
     private static boolean kept(Registry.Model model, Promise promise) {
-        PromiseStatus status = model.statusOf(promise);
-        return status == PromiseStatus.PROVEN || status == PromiseStatus.ASSURED;
+        return model.statusOf(promise).kept();
     }
 
     private static String kind(Classified classified) {
