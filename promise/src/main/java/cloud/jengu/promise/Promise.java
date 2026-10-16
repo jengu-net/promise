@@ -24,6 +24,24 @@ public interface Promise extends Coded {
     /** The promise, as one business-readable sentence. */
     String text();
 
+    /**
+     * The promises this one is based on: the ground that keeps it, worded for
+     * whoever builds that ground, where this one is worded for its own readers.
+     *
+     * <p>Constants of any catalogue the classpath carries, this product's or a
+     * composed product's. Links run down only: a promise names what it rests
+     * on, never what rests on it, and the inverse is derived. A promise based
+     * on others and cited by no test of its own is kept by its basis, and reads
+     * so ({@link PromiseStatus#BASED}).
+     *
+     * <p>Name a constant of the same catalogue declared after this one from an
+     * overriding method, not from the constructor: in the constructor it is not
+     * built yet, and arrives as null, which the model refuses.
+     */
+    default java.util.List<Promise> basis() {
+        return java.util.List.of();
+    }
+
     /** True for a {@link #gap(String)} — ground nobody has stated yet. */
     default boolean gap() {
         return false;

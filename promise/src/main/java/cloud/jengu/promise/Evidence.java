@@ -98,9 +98,26 @@ public final class Evidence {
         LinkedHashSet<Class<?>> catalogues = new LinkedHashSet<>();
         for (URL index : Registry.indexes(loader)) {
             try {
-                catalogues.addAll(Registry.read(loader, index));
+                List<Class<?>> read = Registry.read(loader, index);
+                // A catalogue whose promises name ground this classpath cannot
+                // carry is that product's to fix, and stands for nothing here.
+                for (Class<?> catalogue : read) {
+                    basesOf(catalogue);
+                }
+                catalogues.addAll(read);
             } catch (RuntimeException e) {
                 unreadable.add(new Unreadable(index.toString(), e.getMessage()));
+            }
+        }
+        // A cycle among bases is refused too, for the catalogues declaring it
+        // and for nobody else.
+        for (List<Promise> cycle = Registry.Model.cycle(promisesOf(catalogues)); cycle != null;
+                cycle = Registry.Model.cycle(promisesOf(catalogues))) {
+            for (Promise step : cycle) {
+                if (step instanceof Enum<?> constant && catalogues.remove(constant.getDeclaringClass())) {
+                    unreadable.add(new Unreadable(constant.getDeclaringClass().getName(),
+                            Registry.Model.cycleMessage(cycle)));
+                }
             }
         }
         Proofs proofs = Proofs.none();
@@ -158,6 +175,27 @@ public final class Evidence {
         return new Evidence(Registry.over(catalogues).model(proofs), results, unreadable);
     }
 
+    /** Every promise a catalogue declares, its bases checked; throws as the strict load does. */
+    private static void basesOf(Class<?> catalogue) {
+        for (Object constant : Registry.constantsOf(catalogue)) {
+            if (constant instanceof Promise promise) {
+                Registry.Model.basisOf(promise);
+            }
+        }
+    }
+
+    private static List<Promise> promisesOf(java.util.Collection<Class<?>> catalogues) {
+        List<Promise> promises = new ArrayList<>();
+        for (Class<?> catalogue : catalogues) {
+            for (Object constant : Registry.constantsOf(catalogue)) {
+                if (constant instanceof Promise promise) {
+                    promises.add(promise);
+                }
+            }
+        }
+        return promises;
+    }
+
     /** The composed graph, every readable product's catalogue in it. */
     public Registry.Model model() {
         return model;
@@ -179,14 +217,17 @@ public final class Evidence {
     }
 
     /**
-     * The promise's standing: failing if any test class citing it failed;
-     * otherwise no result if any of them did not run cleanly to the end;
-     * otherwise passing. Judged by the class, because a class is what a run
-     * reports — a method citing a promise is held to the class it is in.
+     * The promise's standing: failing if any test class citing it failed, or
+     * any promise it is based on fails; otherwise no result if any of those did
+     * not run cleanly to the end; otherwise passing. Judged by the class,
+     * because a class is what a run reports — a method citing a promise is held
+     * to the class it is in. A promise with neither tests nor a basis is
+     * uncited.
      */
     public Standing standing(Promise promise) {
         java.util.Set<String> citing = model.citing(promise);
-        if (citing.isEmpty()) {
+        List<Promise> basis = model.basis(promise);
+        if (citing.isEmpty() && basis.isEmpty()) {
             return Standing.UNCITED;
         }
         boolean complete = true;
@@ -196,6 +237,17 @@ public final class Evidence {
                 return Standing.FAILING;
             }
             if (result == null || result.tests() == 0 || result.skipped() > 0) {
+                complete = false;
+            }
+        }
+        // A promise stands on its basis as much as on its own tests: a basis
+        // that fails fails it, and one without a result leaves it without one.
+        for (Promise ground : basis) {
+            Standing standing = standing(ground);
+            if (standing == Standing.FAILING) {
+                return Standing.FAILING;
+            }
+            if (standing != Standing.PASSING) {
                 complete = false;
             }
         }

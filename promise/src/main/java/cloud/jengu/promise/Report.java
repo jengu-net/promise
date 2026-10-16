@@ -48,16 +48,19 @@ public final class Report {
             if (promise.gap()) {
                 out.append(" — *").append(promise.text()).append('*');
             }
+            List<String> standing = new java.util.ArrayList<>(model.citing(promise));
+            model.basis(promise).forEach(ground ->
+                    standing.add("based on " + model.codeOf(ground)));
             out.append(" | ").append(model.statusOf(promise))
-                    .append(" | ").append(String.join("<br>", model.citing(promise)))
+                    .append(" | ").append(String.join("<br>", standing))
                     .append(" |\n");
         }
     }
 
     private static String line(Map<PromiseStatus, Long> coverage) {
         long total = coverage.values().stream().mapToLong(Long::longValue).sum();
-        long proven = coverage.getOrDefault(PromiseStatus.PROVEN, 0L)
-                + coverage.getOrDefault(PromiseStatus.ASSURED, 0L);
+        long proven = coverage.entrySet().stream().filter(e -> e.getKey().kept())
+                .mapToLong(Map.Entry::getValue).sum();
         return "coverage: " + proven + "/" + total + " — " + coverage;
     }
 }

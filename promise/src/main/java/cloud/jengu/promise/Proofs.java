@@ -186,7 +186,7 @@ public final class Proofs {
                     + "', which this classpath does not carry — a stale index is a build "
                     + "defect, not a skippable line", e);
         }
-        Object[] values = catalogue.getEnumConstants();
+        Object[] values = Registry.constantsOf(catalogue);
         for (String constant : line.substring(colon + 1).split(",")) {
             Promise found = null;
             for (Object value : values == null ? new Object[0] : values) {

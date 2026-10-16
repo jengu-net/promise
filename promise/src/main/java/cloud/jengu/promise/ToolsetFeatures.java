@@ -17,7 +17,8 @@ public enum ToolsetFeatures implements Feature {
             ToolsetPromises.REGISTERED_AT_COMPILE_TIME,
             ToolsetPromises.CATALOGUE_READ_WHOLE,
             ToolsetPromises.DOWN_LINKS_ONLY,
-            ToolsetPromises.AREAS_MERGE_BY_CODE)),
+            ToolsetPromises.AREAS_MERGE_BY_CODE,
+            ToolsetPromises.A_PROMISE_NAMES_ITS_BASIS)),
 
     CITING("Citing promises: from tests that prove them and code that enforces them",
             "A test says which promises it proves with its product's own annotation, and "
@@ -39,6 +40,7 @@ public enum ToolsetFeatures implements Feature {
             ToolsetPromises.STATUS_IS_DERIVED,
             ToolsetPromises.COVERAGE_IS_A_FOLD,
             ToolsetPromises.STANDING_IS_READ_FROM_THE_RUN,
+            ToolsetPromises.STANDING_FOLLOWS_THE_BASIS,
             ToolsetPromises.ONE_PRODUCTS_UNREADABLE_EVIDENCE_IS_ITS_OWN,
             ToolsetPromises.THE_LEDGER_IS_ONE_PAGE,
             ToolsetPromises.THE_BADGE_SAYS_WHAT_THE_LEDGER_SAYS)),
