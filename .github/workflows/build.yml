@@ -95,6 +95,9 @@ jobs:
           distribution: temurin
           java-version: "25"
       - uses: gradle/actions/setup-gradle@v4
+      # Tested again here, and packed: the framework's jar carries this
+      # release's own run, so a product resting on the toolset's promises reads
+      # them as this release left them. The tests take about a minute.
       - name: Publish
         env:
           NEXUS_USERNAME: ${{ secrets.NEXUS_USERNAME }}
@@ -103,4 +106,4 @@ jobs:
           SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
         run: >-
           ./gradlew --no-daemon ${{ needs.build.outputs.gradle_args }}
-          publishAllPublicationsToJenguRepoRepository
+          build promisePackResults publishAllPublicationsToJenguRepoRepository
