@@ -148,6 +148,40 @@ public enum ToolsetPromises implements Promise {
                     + "whose jar carries those citations; a classpath holding the framework "
                     + "without the plugin reads this note instead.";
         }
+    },
+
+    A_SKILL_IS_PROJECTED_FROM_ITS_PAGE(
+            "A rule an agent is to follow is written once, as a skill-block in the page that "
+            + "states it, and the Gradle plugin projects every block into a plugin an agent "
+            + "installs; a block it cannot read fails the build rather than vanishing.") {
+        @Override
+        public String assurance() {
+            return "Proven by ASkillIsProjectedFromItsPageTest in the plugin's own module, "
+                    + "whose jar carries those citations; a classpath holding the framework "
+                    + "without the plugin reads this note instead.";
+        }
+    },
+
+    A_STALE_PROJECTION_FAILS_THE_CHECK(
+            "A committed projection of skills that differs from its pages fails the build's "
+            + "check, naming each skill that differs, is missing or has lost its block.") {
+        @Override
+        public String assurance() {
+            return "Proven by ASkillIsProjectedFromItsPageTest in the plugin's own module, "
+                    + "whose jar carries those citations; a classpath holding the framework "
+                    + "without the plugin reads this note instead.";
+        }
+    },
+
+    AN_INSTALLED_PLUGIN_SEES_EVERY_CHANGE(
+            "The projected plugin's version follows the content of its skills, so a changed "
+            + "skill never hides behind an unchanged version.") {
+        @Override
+        public String assurance() {
+            return "Proven by ASkillIsProjectedFromItsPageTest in the plugin's own module, "
+                    + "whose jar carries those citations; a classpath holding the framework "
+                    + "without the plugin reads this note instead.";
+        }
     };
 
     private final String text;

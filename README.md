@@ -443,6 +443,53 @@ composing it, reads each promise's standing as the release build did.
   such as the assembly a product deploys. `results.from(...)` names where the
   run's reports are, and `run.set(...)` names the run.
 
+### Skills: the rules an agent follows
+
+A rule an agent is to follow while it works on a project — how a refund is
+decided, how a test is named — is written once, as a *skill-block* at the end
+of the page that states it:
+
+````markdown
+<!-- skill: shop-refunds -->
+```yaml
+name: shop-refunds
+applies-when: >-
+  Changing how a refund is computed or approved.
+reference: docs/refunds.md
+```
+**Rules**
+- MUST refund no more than was paid.
+<!-- /skill -->
+````
+
+The second plugin, `cloud.jengu.promise.skills`, projects every block under
+`docs/` into a plugin an agent installs: one skill per block, its manifest, its
+marketplace and a README naming each skill's page. `applies-when` becomes the
+skill's description, which decides whether it is read at all; a body under
+`**Reference**` instead of `**Rules**` maps what is offered rather than what is
+forbidden. Links in a block are written from its page and rewritten to reach
+the same files from the skill.
+
+```kotlin
+plugins { id("cloud.jengu.promise.skills") version "<version>" }
+
+skills {
+    description.set("How the shop is built.")
+    owner.set("the shop")
+    // At the repository's root, so the repository installs by its address.
+    marketplace.set(layout.projectDirectory.file(".claude-plugin/marketplace.json"))
+}
+```
+
+`generateSkills` writes the projection into `tools/<name>`, and removes a skill
+whose block is gone. `verifySkills` runs with `check` and fails while the
+committed projection and the pages disagree, naming each difference. The
+plugin's version is `baseVersion` followed by a digest of its skills, so an
+installed copy takes every change. A page may also mark a prose region,
+`<!-- claude:begin -->` … `<!-- claude:end -->`, which is copied into the
+instructions file `instructions` names, between its `<!-- rules:begin -->` and
+`<!-- rules:end -->` markers.
+
 ## The toolset's own promises
 
 The toolset keeps its promises the way it asks a product to keep its own.

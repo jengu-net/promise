@@ -27,6 +27,13 @@ gradlePlugin {
             description = "Indexes a module's promise catalogues and citations, and packs its " +
                 "tests' citations into its jar."
         }
+        register("skills") {
+            id = "cloud.jengu.promise.skills"
+            implementationClass = "cloud.jengu.promise.gradle.SkillsPlugin"
+            displayName = "Promise skills"
+            description = "Projects the skill-blocks a project's documents carry into a plugin an agent " +
+                "installs, and fails the check while the projection and the documents disagree."
+        }
     }
 }
 
