@@ -53,7 +53,16 @@ public enum ToolsetFeatures implements Feature {
             List.of(
             ToolsetPromises.APPLYING_THE_PLUGIN_IS_ALL_A_MODULE_DOES,
             ToolsetPromises.THE_PLUGIN_DRAWS_THE_LEDGER,
-            ToolsetPromises.A_RELEASE_PACKS_ITS_RESULTS));
+            ToolsetPromises.A_RELEASE_PACKS_ITS_RESULTS)),
+
+    PROJECTING_SKILLS("Projecting skills",
+            "The rules an agent follows are written once, in the pages that state them, and "
+            + "projected into a plugin it installs; the build refuses a projection that has "
+            + "drifted from its pages, and every change reaches an installed copy.",
+            List.of(
+            ToolsetPromises.A_SKILL_IS_PROJECTED_FROM_ITS_PAGE,
+            ToolsetPromises.A_STALE_PROJECTION_FAILS_THE_CHECK,
+            ToolsetPromises.AN_INSTALLED_PLUGIN_SEES_EVERY_CHANGE));
 
     private final String title;
     private final String description;

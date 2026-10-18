@@ -61,3 +61,15 @@ coverage: 3/3 — {ASSURED=3}
 | REQ-PROMISE-APPLYING-THE-PLUGIN-IS-ALL-A-MODULE-DOES | ASSURED |  |
 | REQ-PROMISE-THE-PLUGIN-DRAWS-THE-LEDGER | ASSURED |  |
 | REQ-PROMISE-A-RELEASE-PACKS-ITS-RESULTS | ASSURED |  |
+
+### FEAT-PROMISE-PROJECTING-SKILLS — Projecting skills
+
+The rules an agent follows are written once, in the pages that state them, and projected into a plugin it installs; the build refuses a projection that has drifted from its pages, and every change reaches an installed copy.
+
+coverage: 3/3 — {ASSURED=3}
+
+| promise | status | proven by |
+|---|---|---|
+| REQ-PROMISE-A-SKILL-IS-PROJECTED-FROM-ITS-PAGE | ASSURED |  |
+| REQ-PROMISE-A-STALE-PROJECTION-FAILS-THE-CHECK | ASSURED |  |
+| REQ-PROMISE-AN-INSTALLED-PLUGIN-SEES-EVERY-CHANGE | ASSURED |  |
