@@ -35,7 +35,8 @@ public enum ToolsetFeatures implements Feature {
             "From a classpath, the composed graph: every promise's status, every group's "
             + "coverage, and with a run's JUnit results each promise's standing. One "
             + "product's unreadable evidence is reported and never takes another's down. "
-            + "The same reading draws the markdown report and the HTML ledger.",
+            + "The same reading draws the markdown report, the HTML ledger and the JSON "
+            + "export.",
             List.of(
             ToolsetPromises.STATUS_IS_DERIVED,
             ToolsetPromises.COVERAGE_IS_A_FOLD,
@@ -44,7 +45,8 @@ public enum ToolsetFeatures implements Feature {
             ToolsetPromises.A_RUN_IS_PACKED_FAITHFULLY,
             ToolsetPromises.ONE_PRODUCTS_UNREADABLE_EVIDENCE_IS_ITS_OWN,
             ToolsetPromises.THE_LEDGER_IS_ONE_PAGE,
-            ToolsetPromises.THE_BADGE_SAYS_WHAT_THE_LEDGER_SAYS)),
+            ToolsetPromises.THE_BADGE_SAYS_WHAT_THE_LEDGER_SAYS,
+            ToolsetPromises.THE_GRAPH_IS_EXPORTED_AS_ONE_DOCUMENT)),
 
     BUILDING("Wiring a product's build",
             "One Gradle plugin is all a module applies: it indexes the module's catalogues "

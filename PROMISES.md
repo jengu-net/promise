@@ -35,9 +35,9 @@ coverage: 4/4 — {PROVEN=4}
 
 ### FEAT-PROMISE-READING — Reading the graph and the evidence behind it
 
-From a classpath, the composed graph: every promise's status, every group's coverage, and with a run's JUnit results each promise's standing. One product's unreadable evidence is reported and never takes another's down. The same reading draws the markdown report and the HTML ledger.
+From a classpath, the composed graph: every promise's status, every group's coverage, and with a run's JUnit results each promise's standing. One product's unreadable evidence is reported and never takes another's down. The same reading draws the markdown report, the HTML ledger and the JSON export.
 
-coverage: 8/8 — {PROVEN=8}
+coverage: 9/9 — {PROVEN=9}
 
 | promise | status | proven by |
 |---|---|---|
@@ -49,6 +49,7 @@ coverage: 8/8 — {PROVEN=8}
 | REQ-PROMISE-ONE-PRODUCTS-UNREADABLE-EVIDENCE-IS-ITS-OWN | PROVEN | cloud.jengu.promise.EvidenceTest#oneProductsUnreadableIndexIsReported |
 | REQ-PROMISE-THE-LEDGER-IS-ONE-PAGE | PROVEN | cloud.jengu.promise.BasisTest#theLedgerShowsTheBasis<br>cloud.jengu.promise.HtmlReportTest#aCatalogueCannotWriteMarkupIntoThePage<br>cloud.jengu.promise.HtmlReportTest#theLedgerCarriesTheModelAndTheRun<br>cloud.jengu.promise.HtmlReportTest#theSummaryLeadsWithWhatIsKept<br>cloud.jengu.promise.HtmlReportTest#withoutARunThereIsNoStanding |
 | REQ-PROMISE-THE-BADGE-SAYS-WHAT-THE-LEDGER-SAYS | PROVEN | cloud.jengu.promise.HtmlReportTest#theBadgeSaysWhatTheLedgerSays |
+| REQ-PROMISE-THE-GRAPH-IS-EXPORTED-AS-ONE-DOCUMENT | PROVEN | cloud.jengu.promise.PromiseExportTest#everyAreaUnlessAProductNamesItsOwn<br>cloud.jengu.promise.PromiseExportTest#theExportHoldsTheGraphAndItsEvidence |
 
 ### FEAT-PROMISE-BUILDING — Wiring a product's build
 

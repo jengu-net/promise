@@ -150,6 +150,12 @@ public enum ToolsetPromises implements Promise {
         }
     },
 
+    THE_GRAPH_IS_EXPORTED_AS_ONE_DOCUMENT(
+            "The composed graph and its evidence are written out as one JSON document — the "
+            + "areas, their groups with the pages that tell them, and every promise they reach "
+            + "with its status, standing, citing tests and basis — for a reader that cannot "
+            + "load the catalogues."),
+
     A_SKILL_IS_PROJECTED_FROM_ITS_PAGE(
             "A rule an agent is to follow is written once, as a skill-block in the page that "
             + "states it, and the Gradle plugin projects every block into a plugin an agent "

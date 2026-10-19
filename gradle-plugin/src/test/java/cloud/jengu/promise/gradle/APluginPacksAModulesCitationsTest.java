@@ -122,7 +122,7 @@ class APluginPacksAModulesCitationsTest {
                 .withProjectDir(build.toFile())
                 .withPluginClasspath()
                 .withEnvironment(environment)
-                .withArguments("promiseReport", "--stacktrace")
+                .withArguments("promiseReport", "promiseExport", "--stacktrace")
                 .forwardOutput()
                 .build();
 
@@ -282,6 +282,22 @@ class APluginPacksAModulesCitationsTest {
         assertTrue(summary.contains("## one: 50% kept"), summary);
         assertTrue(summary.contains("## The products: 50% kept"), summary);
         assertTrue(summary.contains("last run: 1 passing"), summary);
+    }
+
+    @Test
+    @DisplayName("each module, and a root over them, writes the same reading as one JSON document, "
+            + "without running the tests")
+    @ProvingToolset(ToolsetPromises.THE_GRAPH_IS_EXPORTED_AS_ONE_DOCUMENT)
+    void eachModuleAndTheProductExportTheirGraph() throws IOException {
+        for (String export : List.of("one/build/reports/promise/export.json",
+                "build/reports/promise/export.json")) {
+            String json = Files.readString(build.resolve(export));
+            assertTrue(json.startsWith("{\n \"generatedAt\": "), export + ": " + json);
+            assertTrue(json.contains("\"areas\": []") && json.contains("\"unreadable\": []"),
+                    export + ": " + json);
+        }
+        assertNull(reported.task(":plain:promiseExport"), "a module without the plugin exported");
+        assertNull(reported.task(":one:test"), "exporting ran the tests");
     }
 
     @Test
