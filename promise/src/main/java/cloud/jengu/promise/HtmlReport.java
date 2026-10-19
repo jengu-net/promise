@@ -387,7 +387,7 @@ public final class HtmlReport {
         return model.statusOf(promise).kept();
     }
 
-    private static String kind(Classified classified) {
+    static String kind(Classified classified) {
         if (classified instanceof Story) {
             return "story";
         }
@@ -412,7 +412,7 @@ public final class HtmlReport {
         };
     }
 
-    private static String namespace(Promise promise) {
+    static String namespace(Promise promise) {
         if (!(promise instanceof Enum<?> constant)) {
             return "gap";
         }

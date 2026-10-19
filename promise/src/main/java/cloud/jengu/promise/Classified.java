@@ -29,6 +29,16 @@ public interface Classified extends Coded {
         return null;
     }
 
+    /**
+     * The page that tells this classification, as a path from the repository's
+     * root — or null, when it has none. A reader holding only the catalogue,
+     * or its export, follows it there for the prose the title and
+     * description summarise.
+     */
+    default String document() {
+        return null;
+    }
+
     /** The promises fulfilling this classification — named constants and gaps. */
     List<Promise> promises();
 }

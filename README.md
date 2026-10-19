@@ -97,6 +97,10 @@ public enum ShopFeatures implements Feature {
 groups the groups: a regulation, say, covered paragraph by paragraph as
 constraints. The same area may span several products' catalogues.
 
+A group that has a page of its own names it with `document()`, a path from
+the repository's root, so a reader holding only the catalogue or its export
+can follow it there.
+
 ### When you cannot say it yet
 
 If you cannot describe a promise well enough yet, that is not a big issue.
@@ -442,6 +446,26 @@ composing it, reads each promise's standing as the release build did.
 - **Configurable:** `promise { resultsInto.set(...) }` names another jar,
   such as the assembly a product deploys. `results.from(...)` names where the
   run's reports are, and `run.set(...)` names the run.
+
+### The export: one JSON document
+
+```sh
+./gradlew build promiseExport
+```
+
+`promiseExport` writes the same reading as the ledger to
+`build/reports/promise/export.json`, for a reader that cannot load the
+catalogues: a script, a check in CI, a server answering an agent's questions
+about the project. It holds the areas, each group with its kind, title,
+description, page and area, and every promise those groups list or rest on,
+with its text, status, standing, citing tests, its basis and what rests on
+it. A gap appears as a promise of status `GAP`.
+
+By default it holds every area of the graph. A product composing others'
+catalogues names its own with `promise { areas.add("shop.ShopAreas") }`, and
+their promises' bases are still exported, wherever they are declared.
+`results.from(...)` names where the run's reports are. In code it is
+`PromiseExport.json(evidence)`, or `PromiseExport.json(evidence, areas)`.
 
 ### Skills: the rules an agent follows
 

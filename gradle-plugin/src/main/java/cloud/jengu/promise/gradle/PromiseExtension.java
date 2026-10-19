@@ -2,6 +2,7 @@ package cloud.jengu.promise.gradle;
 
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
 
 /** What a build may say about its ledger. */
@@ -32,4 +33,11 @@ public interface PromiseExtension {
      * said.
      */
     Property<String> getRun();
+
+    /**
+     * The enums of areas {@code promiseExport} writes, by class name: a
+     * product's own, when the graph it composes holds others'. Every area of
+     * the graph unless said.
+     */
+    ListProperty<String> getAreas();
 }

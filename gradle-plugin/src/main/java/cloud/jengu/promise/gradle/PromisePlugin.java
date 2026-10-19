@@ -46,6 +46,8 @@ import java.util.Properties;
  *   <li>{@code promiseReport} draws the module's ledger: one HTML page and a
  *       markdown summary, from its jar, its runtime classpath and its tests'
  *       results.</li>
+ *   <li>{@code promiseExport} writes the same reading as one JSON document,
+ *       for a reader that cannot load the catalogues.</li>
  * </ul>
  *
  * <p>The jar waits for the test COMPILATION, never for the tests: the
@@ -64,6 +66,9 @@ public class PromisePlugin implements Plugin<Project> {
     /** The task that draws the ledger. */
     public static final String REPORT_TASK = "promiseReport";
 
+    /** The task that writes the graph and its evidence as one JSON document. */
+    public static final String EXPORT_TASK = "promiseExport";
+
     static final String ID = "cloud.jengu.promise";
 
     @Override
@@ -71,6 +76,7 @@ public class PromisePlugin implements Plugin<Project> {
         PromiseExtension extension = project.getExtensions().create("promise", PromiseExtension.class);
         extension.getTitle().convention(project.getName());
         extension.getStrict().convention(false);
+        extension.getAreas().convention(List.of());
         project.getPlugins().withType(JavaPlugin.class, java -> wire(project, extension));
         if (project == project.getRootProject()) {
             // Once every project is configured: the root is evaluated before its
@@ -262,6 +268,34 @@ public class PromisePlugin implements Plugin<Project> {
                 return args;
             });
             task.doLast(t -> stepSummary(summary));
+        });
+        File export = new File(dir, "export.json");
+        project.getTasks().register(EXPORT_TASK, JavaExec.class, task -> {
+            task.setGroup("documentation");
+            task.setDescription("Writes what this build promises, and what its last test run "
+                    + "proved, as one JSON document.");
+            task.getMainClass().set("cloud.jengu.promise.PromiseExport");
+            task.setClasspath(classpath);
+            task.getOutputs().file(export);
+            task.getOutputs().upToDateWhen(t -> false);
+            task.mustRunAfter(project.getTasks().withType(Test.class));
+            task.getArgumentProviders().add(() -> {
+                List<String> args = new ArrayList<>(List.of("--out", export.getPath()));
+                java.util.Collection<File> roots = extension.getResults().isEmpty()
+                        ? results : extension.getResults().getFiles();
+                for (File root : roots) {
+                    args.add("--results");
+                    args.add(root.getPath());
+                }
+                for (String areas : extension.getAreas().get()) {
+                    args.add("--areas");
+                    args.add(areas);
+                }
+                if (extension.getStrict().get()) {
+                    args.add("--strict");
+                }
+                return args;
+            });
         });
     }
 
